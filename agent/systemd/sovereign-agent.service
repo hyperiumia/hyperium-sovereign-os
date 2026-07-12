@@ -1,0 +1,21 @@
+[Unit]
+Description=Hyperium Sovereign-OS Endpoint Agent
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/local/bin/sovereign-agent
+Restart=always
+RestartSec=5
+Environment=RUST_LOG=info
+
+# Security hardening
+ProtectSystem=strict
+ReadWritePaths=/var/lib/sovereign-agent /tmp
+NoNewPrivileges=false
+PrivateTmp=false
+
+[Install]
+WantedBy=multi-user.target

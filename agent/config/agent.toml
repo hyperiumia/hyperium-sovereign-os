@@ -1,0 +1,27 @@
+# Hyperium Sovereign-OS — Agent Configuration
+
+agent_id = "agent-001"
+device_id = "workstation-alpha"
+server_url = "http://127.0.0.1:8000"
+hmac_secret = "change-me-in-production-to-a-strong-random-secret-256bit"
+
+# Paths to monitor for file system events
+watch_paths = ["/tmp", "/home"]
+
+# Poll intervals (milliseconds)
+usb_poll_ms = 2000
+network_poll_ms = 3000
+filesystem_enabled = true
+
+# Retry and resilience
+max_retries = 5
+retry_base_ms = 1000
+queue_max_events = 10000
+queue_flush_batch = 50
+
+# Health check interval (seconds)
+health_check_interval_s = 30
+
+# Enforcement actions
+freeze_on_high_risk = true
+isolate_on_critical = true

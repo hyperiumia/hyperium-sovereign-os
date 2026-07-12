@@ -1,0 +1,71 @@
+policies:
+  - name: "block-usb-confidential"
+    description: "Bloquea USB en workspaces confidenciales o superiores"
+    trigger: "usb.*"
+    conditions:
+      - field: "workspace.classification"
+        operator: "in"
+        value: ["CONFIDENTIAL", "TOP_SECRET"]
+      - field: "workspace.allow_usb"
+        operator: "eq"
+        value: false
+    action: "BLOCK"
+    severity: "HIGH"
+    priority: 10
+
+  - name: "alert-usb-any-workspace"
+    description: "Registra cualquier conexion USB"
+    trigger: "usb.*"
+    conditions: []
+    action: "LOG"
+    severity: "LOW"
+    priority: 200
+
+  - name: "freeze-large-transfer"
+    description: "Congela sesion si supera 500MB"
+    trigger: "session.data_volume"
+    conditions:
+      - field: "session.data_volume_bytes"
+        operator: "gt"
+        value: 524288000
+    action: "ALERT_AND_FREEZE"
+    severity: "CRITICAL"
+    priority: 5
+
+  - name: "freeze-high-risk-session"
+    description: "Congela sesion si risk score supera 0.85"
+    trigger: "*"
+    conditions:
+      - field: "session.risk_score"
+        operator: "gte"
+        value: 0.85
+    action: "FREEZE"
+    severity: "CRITICAL"
+    priority: 1
+
+  - name: "block-airgap-network"
+    description: "Bloquea red en workspaces air-gapped"
+    trigger: "network.*"
+    conditions:
+      - field: "workspace.is_air_gapped"
+        operator: "eq"
+        value: true
+    action: "BLOCK"
+    severity: "CRITICAL"
+    priority: 2
+
+  - name: "isolate-ransomware-signal"
+    description: "Aisla ante senales de ransomware"
+    trigger: "filesystem.mass_encrypt"
+    conditions: []
+    action: "ISOLATE"
+    severity: "CRITICAL"
+    priority: 0
+
+  - name: "isolate-log-deletion"
+    description: "Aisla si se intenta borrar logs"
+    trigger: "filesystem.log_deletion_attempt"
+    conditions: []
+    action: "ISOLATE"
+    severity: "CRITICAL"
+    priority: 0
