@@ -59,11 +59,11 @@ El guardian de cada endpoint. Monitorea en tiempo real y ejecuta acciones de enf
 | **Filesystem Monitor** | inotify non-blocking | Creación/eliminación de archivos, borrado de logs, ransomware |
 | **Session Monitor** | who + env | Cambios de usuario, inicio/cierre de sesión |
 
-### Enforcement (Acciones Locales)
+### Enforcement
 
 | Acción | Trigger | Efecto |
 |---|---|---|
-| **FREEZE** | Risk score alto, transferencia masiva, USB | Bloqueo de pantalla, kill de procesos sospechosos |
+| **FREEZE** | Risk score alto, transferencia masiva, USB | Bloqueo de pantalla, kill de procesos |
 | **ISOLATE** | Ransomware, borrado de logs | iptables DROP tráfico saliente excepto al servidor |
 | **BLOCK** | USB en workspace confidencial | Bloqueo de la acción específica |
 
@@ -75,3 +75,251 @@ El guardian de cada endpoint. Monitorea en tiempo real y ejecuta acciones de enf
 | **Retry con backoff** | Exponencial hasta 30s. Nunca deja de monitorear. |
 | **Batch sending** | Hasta 50 eventos por request. |
 | **Health checks** | Cada 30s con alertas si el servidor no responde. |
+
+---
+
+## Criptografía
+
+Cada evento que llega al servidor:
+
+1. Se **hashea** con SHA-256 (hash canónico del payload JSON).
+2. Se **verifica** el HMAC-SHA256 enviado por el agent (autenticidad).
+3. Se **agrega** como hoja del Merkle tree del epoch actual.
+4. Cada 100 eventos, el epoch se **cierra**: raíz Merkle firmada con Ed25519.
+5. La raíz firmada es un checkpoint inmutable: cualquier manipulación es detectable.
+
+Si un atacante altera un log después de ser almacenado, el sistema detecta la manipulación comparando el hash recalculado con el almacenado.
+
+---
+
+## Políticas
+
+Las políticas se definen en YAML y se evalúan contra cada evento:
+
+### Operadores soportados
+
+| Operador | Descripción |
+|---|---|
+| `eq` / `neq` | Igualdad / Desigualdad |
+| `gt` / `gte` / `lt` / `lte` | Comparaciones numéricas |
+| `contains` | Substring |
+| `in` | Membership en lista |
+| `matches` | Regex |
+
+### Políticas por defecto
+
+| Política | Trigger | Acción | Prioridad |
+|---|---|---|---|
+| isolate-ransomware-signal | filesystem.mass_encrypt | ISOLATE | 0 |
+| isolate-log-deletion | filesystem.log_deletion_attempt | ISOLATE | 0 |
+| freeze-high-risk-session | risk >= 0.85 | FREEZE | 1 |
+| block-airgap-network | network.* (air-gapped) | BLOCK | 2 |
+| freeze-large-transfer | session.data_volume > 500MB | ALERT_AND_FREEZE | 5 |
+| block-usb-confidential | usb.* (confidencial) | BLOCK | 10 |
+| alert-usb-any-workspace | usb.* | LOG | 200 |
+
+---
+
+## Quick Start
+
+### Requisitos
+
+- Python 3.12+
+- Rust 1.70+ (solo para compilar el agent)
+- Linux (el agent usa /proc, /sys e inotify)
+
+### Servidor
+
+```bash
+git clone https://github.com/hyperiumia/hyperium-sovereign-os.git
+cd hyperium-sovereign-os/server
+pip install -r requirements.txt
+uvicorn app.main:app --port 8000
+curl http://localhost:8000/health
+```
+
+### Agent
+
+```bash
+cd hyperium-sovereign-os/agent
+cargo build --release
+RUST_LOG=info ./target/release/sovereign-agent
+```
+
+### Demo de ataque
+
+```bash
+cd hyperium-sovereign-os/server
+python scripts/demo_attack.py
+```
+
+Simula un escenario completo de insider threat: USB no autorizado, transferencia masiva, borrado de logs, ransomware.
+
+---
+
+## Tests
+
+```bash
+cd hyperium-sovereign-os/server
+python -m pytest tests/ -v
+```
+
+**74 tests** passing:
+
+| Suite | Tests | Cobertura |
+|---|---|---|
+| test_crypto.py | 18 | SHA-256, HMAC, Merkle tree, Ed25519 |
+| test_policy_engine.py | 18 | 10 operadores, wildcards, condiciones, prioridades |
+| test_evidence_vault.py | 9 | Ingesta, rechazo de manipulación, epochs, verificación |
+| test_api.py | 16 | Health, CRUD, ingesta, batch, verificación, alertas |
+| test_risk_engine.py | 4 | Scoring, volumen, historial, bounds |
+
+---
+
+## API Reference
+
+### Events
+
+| Método | Endpoint | Descripción |
+|---|---|---|
+| POST | /api/v1/events/ingest | Ingesta individual |
+| POST | /api/v1/events/ingest/batch | Ingesta en lote |
+
+### Evidence
+
+| Método | Endpoint | Descripción |
+|---|---|---|
+| GET | /api/v1/evidence/verify/{id} | Verificar integridad |
+| GET | /api/v1/evidence/epoch/{n} | Datos de epoch Merkle |
+| GET | /api/v1/evidence/epoch/{n}/verify | Verificar firma de epoch |
+| GET | /api/v1/evidence/stats | Estadísticas del Vault |
+
+### Workspaces
+
+| Método | Endpoint | Descripción |
+|---|---|---|
+| GET | /api/v1/workspaces/ | Listar workspaces |
+| POST | /api/v1/workspaces/ | Crear workspace |
+| POST | /api/v1/workspaces/{id}/grant | Otorgar acceso |
+| POST | /api/v1/workspaces/{id}/revoke/{gid} | Revocar acceso |
+
+### Policies
+
+| Método | Endpoint | Descripción |
+|---|---|---|
+| GET | /api/v1/policies/ | Listar políticas |
+| POST | /api/v1/policies/ | Crear política |
+| PUT | /api/v1/policies/{id}/toggle | Activar/desactivar |
+
+### Alerts
+
+| Método | Endpoint | Descripción |
+|---|---|---|
+| GET | /api/v1/alerts/ | Listar alertas |
+| PUT | /api/v1/alerts/{id}/resolve | Resolver alerta |
+
+### System
+
+| Método | Endpoint | Descripción |
+|---|---|---|
+| GET | /health | Health check |
+| GET | / | Info del sistema |
+| GET | /docs | Swagger UI |
+
+---
+
+## Deployment
+
+### Docker
+
+```bash
+cd hyperium-sovereign-os
+docker-compose up -d
+```
+
+### systemd (Agent)
+
+```bash
+sudo cp agent/target/release/sovereign-agent /usr/local/bin/
+sudo cp agent/config/agent.toml /etc/sovereign-agent/
+sudo cp agent/systemd/sovereign-agent.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable sovereign-agent
+sudo systemctl start sovereign-agent
+```
+
+---
+
+## Modelo de amenaza
+
+Sovereign-OS asume que **la red ya puede estar comprometida**:
+
+| Actor | Objetivo | Defensa |
+|---|---|---|
+| **Insider malicioso** | Exfiltrar IP | USB blocking, risk scoring |
+| **Insider negligente** | Data leak accidental | Políticas automáticas, alertas |
+| **Atacante externo** | Robar código, borrar logs | Aislamiento forense, sellado |
+| **Competencia** | Espionaje corporativo | Watermarking, air-gapped |
+| **Ransomware** | Cifrar evidencia | Detección de patrones, aislamiento |
+
+---
+
+## Roadmap
+
+### Fase 1 — MVP Operacional (Actual)
+
+- [x] Servidor con 14 entidades y 15+ endpoints
+- [x] Evidence Vault con Merkle tree y Ed25519
+- [x] Policy Engine declarativo con YAML
+- [x] Risk Engine multifactor
+- [x] Agent Rust con 4 monitores
+- [x] Cola offline persistente
+- [x] Enforcement local (freeze, isolate)
+- [x] 74 tests passing
+- [x] Demo E2E de ataque
+
+### Fase 2 — Observabilidad avanzada
+
+- [ ] Watermarking criptográfico
+- [ ] Taint analysis corporativa
+- [ ] Timeline forense visual
+- [ ] Exportación de paquete forense
+
+### Fase 3 — DFIR y compliance
+
+- [ ] Sellado RFC 3161
+- [ ] Integración SIEM/EDR
+- [ ] NDAs dinámicos
+- [ ] Reportes ejecutivos
+- [ ] Mapeo ISO 27001
+
+---
+
+## Stack tecnológico
+
+| Capa | Tecnología | Razón |
+|---|---|---|
+| **Servidor** | Python 3.12 + FastAPI | Async, ecosistema maduro |
+| **Base de datos** | SQLAlchemy + SQLite/PostgreSQL | ORM robusto |
+| **Criptografía** | hashlib + cryptography (Ed25519) | Estándares NIST |
+| **Agent** | Rust + Tokio | Performance, sin dependencias |
+| **Filesystem** | inotify non-blocking | Detección en tiempo real |
+| **Despliegue** | Docker + systemd | On-premise |
+
+---
+
+## Licencia
+
+Propiedad de **Hyperium IA**. Todos los derechos reservados.
+
+Contacto: security@hyperiumia.com
+
+---
+
+Desarrollado por [Hyperium IA](https://www.hyperiumia.com) — Inteligencia Artificial aplicada a ciberseguridad corporativa.
+
+<p align="center">
+  <strong>Hyperium Sovereign-OS</strong><br>
+  Soberanía corporativa operable.<br>
+  <a href="https://www.hyperiumia.com">www.hyperiumia.com</a>
+</p>
