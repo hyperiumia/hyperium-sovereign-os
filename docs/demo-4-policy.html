@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sovereign-OS — Policy Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080808;--surface:#111;--border:#1a1a1a;--cyan:#00f0ff;--red:#ff2d55;--green:#00ff88;--yellow:#ffd600;--text:#e0e0e0;--muted:#555;--font-display:"Rajdhani",sans-serif;--font-mono:"Space Mono",monospace}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-size:13px;min-height:100vh}
+.grid-bg{position:fixed;inset:0;background-image:linear-gradient(rgba(0,240,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,240,255,0.02) 1px,transparent 1px);background-size:40px 40px;pointer-events:none}
+.header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid var(--border);background:rgba(17,17,17,0.9);backdrop-filter:blur(10px);position:sticky;top:0;z-index:10}
+.logo{font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--cyan);letter-spacing:2px}
+.container{max-width:1100px;margin:0 auto;padding:32px 24px;position:relative;z-index:1}
+h1{font-family:var(--font-display);font-size:36px;color:#fff;margin-bottom:8px;letter-spacing:2px}
+.subtitle{color:var(--muted);margin-bottom:40px;font-size:14px}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:40px}
+.stat-card{background:var(--surface);border:1px solid var(--border);padding:20px;text-align:center}
+.stat-num{font-family:var(--font-display);font-size:32px;font-weight:700}
+.stat-label{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-top:4px}
+.policy-list{display:flex;flex-direction:column;gap:12px;margin-bottom:40px}
+.policy-card{background:var(--surface);border:1px solid var(--border);padding:0;overflow:hidden;transition:all .3s}
+.policy-card:hover{border-color:rgba(0,240,255,0.3)}
+.policy-card-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;cursor:pointer}
+.policy-card-header:hover{background:rgba(0,240,255,0.03)}
+.policy-name{font-family:var(--font-display);font-size:18px;color:#fff;font-weight:600}
+.policy-priority{font-size:10px;padding:3px 10px;letter-spacing:1px}
+.pri-0{background:rgba(255,45,85,0.15);color:var(--red);border:1px solid rgba(255,45,85,0.3)}
+.pri-1{background:rgba(255,149,0,0.15);color:#ff9500;border:1px solid rgba(255,149,0,0.3)}
+.pri-2{background:rgba(255,214,0,0.15);color:var(--yellow);border:1px solid rgba(255,214,0,0.3)}
+.pri-5{background:rgba(0,240,255,0.15);color:var(--cyan);border:1px solid rgba(0,240,255,0.3)}
+.pri-10{background:rgba(0,255,136,0.15);color:var(--green);border:1px solid rgba(0,255,136,0.3)}
+.pri-200{background:rgba(85,85,85,0.15);color:var(--muted);border:1px solid rgba(85,85,85,0.3)}
+.policy-badge{padding:3px 10px;font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-left:8px}
+.action-isolate{background:rgba(255,45,85,0.15);color:var(--red);border:1px solid rgba(255,45,85,0.3)}
+.action-freeze{background:rgba(255,214,0,0.15);color:var(--yellow);border:1px solid rgba(255,214,0,0.3)}
+.action-block{background:rgba(255,149,0,0.15);color:#ff9500;border:1px solid rgba(255,149,0,0.3)}
+.action-log{background:rgba(85,85,85,0.15);color:var(--muted);border:1px solid rgba(85,85,85,0.3)}
+.policy-body{padding:0 20px 16px;display:none}
+.policy-card.open .policy-body{display:block}
+.policy-card.open{border-color:rgba(0,240,255,0.2)}
+.policy-desc{color:var(--muted);font-size:12px;margin-bottom:16px}
+.condition-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.condition{display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--border);font-size:12px}
+.condition-field{color:var(--cyan)}
+.condition-op{color:var(--yellow);padding:2px 8px;background:rgba(255,214,0,0.1);border:1px solid rgba(255,214,0,0.2);font-size:10px}
+.condition-value{color:var(--green)}
+.trigger-tag{display:inline-block;padding:3px 10px;font-size:10px;background:rgba(0,240,255,0.1);border:1px solid rgba(0,240,255,0.2);color:var(--cyan);margin-bottom:12px;letter-spacing:1px}
+.operators{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:40px}
+.op-card{background:var(--surface);border:1px solid var(--border);padding:16px;text-align:center;transition:all .3s}
+.op-card:hover{border-color:var(--cyan)}
+.op-name{font-family:var(--font-display);font-size:20px;color:var(--cyan);margin-bottom:4px}
+.op-desc{font-size:11px;color:var(--muted)}
+.test-section{background:var(--surface);border:1px solid var(--border);padding:24px}
+.test-title{font-family:var(--font-display);font-size:20px;color:#fff;margin-bottom:16px}
+.test-input{display:flex;gap:12px;margin-bottom:16px}
+.test-input input,.test-input select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;font-family:var(--font-mono);font-size:12px;flex:1}
+.test-input select{flex:0.5}
+.test-btn{background:var(--cyan);color:#000;border:none;padding:10px 20px;font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:1px;cursor:pointer}
+.test-result{padding:16px;border:1px solid var(--border);font-size:12px;display:none}
+.test-result.show{display:block}
+.footer{text-align:center;padding:40px 0;color:var(--muted);font-size:11px;border-top:1px solid var(--border);margin-top:40px}
+.footer a{color:var(--cyan)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.fade{animation:fadeIn .5s ease forwards}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="header">
+<div class="logo">SOVEREIGN-OS</div>
+<div style="font-size:11px;color:var(--muted)">Policy Engine v0.1.0</div>
+</div>
+<div class="container">
+<h1>POLICY ENGINE</h1>
+<p class="subtitle">Motor declarativo con 10 operadores, wildcards, prioridades y condiciones AND.</p>
+
+<div class="stats-row">
+<div class="stat-card fade"><div class="stat-num" style="color:var(--cyan)">7</div><div class="stat-label">Active Policies</div></div>
+<div class="stat-card fade" style="animation-delay:.1s"><div class="stat-num" style="color:var(--green)">10</div><div class="stat-label">Operators</div></div>
+<div class="stat-card fade" style="animation-delay:.2s"><div class="stat-num" style="color:var(--yellow)">5</div><div class="stat-label">Action Types</div></div>
+<div class="stat-card fade" style="animation-delay:.3s"><div class="stat-num" style="color:var(--red)">2</div><div class="stat-label">Triggers Fired</div></div>
+</div>
+
+<h2 style="font-family:var(--font-display);font-size:24px;color:#fff;margin-bottom:20px;letter-spacing:1px">Active Policies</h2>
+<div class="policy-list">
+<div class="policy-card fade open">
+<div class="policy-card-header" onclick="this.parentElement.classList.toggle('open')">
+<div><span class="policy-name">isolate-ransomware-signal</span><span class="policy-badge action-isolate">ISOLATE</span></div>
+<span class="policy-priority pri-0">PRIORITY 0</span>
+</div>
+<div class="policy-body">
+<p class="policy-desc">Aísla la máquina inmediatamente si se detectan patrones de ransomware.</p>
+<div class="trigger-tag">TRIGGER: filesystem.mass_encrypt</div>
+<div class="condition-list">
+<div class="condition"><span class="condition-field">filename</span><span class="condition-op">matches</span><span class="condition-value">.locked | .encrypted | .crypto</span></div>
+</div>
+</div>
+</div>
+<div class="policy-card fade">
+<div class="policy-card-header" onclick="this.parentElement.classList.toggle('open')">
+<div><span class="policy-name">isolate-log-deletion</span><span class="policy-badge action-isolate">ISOLATE</span></div>
+<span class="policy-priority pri-0">PRIORITY 0</span>
+</div>
+<div class="policy-body">
+<p class="policy-desc">Aísla si se intentan borrar logs del sistema.</p>
+<div class="trigger-tag">TRIGGER: filesystem.log_deletion_attempt</div>
+<div class="condition-list">
+<div class="condition"><span class="condition-field">filename</span><span class="condition-op">contains</span><span class="condition-value">log | audit | auth | syslog</span></div>
+<div class="condition"><span class="condition-field">action</span><span class="condition-op">eq</span><span class="condition-value">DELETE</span></div>
+</div>
+</div>
+</div>
+<div class="policy-card fade" style="animation-delay:.1s">
+<div class="policy-card-header" onclick="this.parentElement.classList.toggle('open')">
+<div><span class="policy-name">freeze-high-risk-session</span><span class="policy-badge action-freeze">FREEZE</span></div>
+<span class="policy-priority pri-1">PRIORITY 1</span>
+</div>
+<div class="policy-body">
+<p class="policy-desc">Congela la sesión si el risk score supera el umbral.</p>
+<div class="trigger-tag">TRIGGER: *</div>
+<div class="condition-list">
+<div class="condition"><span class="condition-field">risk_score</span><span class="condition-op">gte</span><span class="condition-value">0.85</span></div>
+</div>
+</div>
+</div>
+<div class="policy-card fade" style="animation-delay:.15s">
+<div class="policy-card-header" onclick="this.parentElement.classList.toggle('open')">
+<div><span class="policy-name">block-airgap-network</span><span class="policy-badge action-block">BLOCK</span></div>
+<span class="policy-priority pri-2">PRIORITY 2</span>
+</div>
+<div class="policy-body">
+<p class="policy-desc">Bloquea toda conexión de red en workspaces air-gapped.</p>
+<div class="trigger-tag">TRIGGER: network.*</div>
+<div class="condition-list">
+<div class="condition"><span class="condition-field">workspace.type</span><span class="condition-op">eq</span><span class="condition-value">AIR_GAPPED</span></div>
+</div>
+</div>
+</div>
+<div class="policy-card fade" style="animation-delay:.2s">
+<div class="policy-card-header" onclick="this.parentElement.classList.toggle('open')">
+<div><span class="policy-name">freeze-large-transfer</span><span class="policy-badge action-freeze">ALERT_AND_FREEZE</span></div>
+<span class="policy-priority pri-5">PRIORITY 5</span>
+</div>
+<div class="policy-body">
+<p class="policy-desc">Congela si se transfieren más de 500MB.</p>
+<div class="trigger-tag">TRIGGER: session.data_volume</div>
+<div class="condition-list">
+<div class="condition"><span class="condition-field">session.data_volume_bytes</span><span class="condition-op">gt</span><span class="condition-value">524288000</span></div>
+</div>
+</div>
+</div>
+<div class="policy-card fade" style="animation-delay:.25s">
+<div class="policy-card-header" onclick="this.parentElement.classList.toggle('open')">
+<div><span class="policy-name">block-usb-confidential</span><span class="policy-badge action-block">BLOCK</span></div>
+<span class="policy-priority pri-10">PRIORITY 10</span>
+</div>
+<div class="policy-body">
+<p class="policy-desc">Bloquea USB en workspaces confidenciales.</p>
+<div class="trigger-tag">TRIGGER: usb.*</div>
+<div class="condition-list">
+<div class="condition"><span class="condition-field">workspace.classification</span><span class="condition-op">in</span><span class="condition-value">CONFIDENTIAL, TOP_SECRET</span></div>
+<div class="condition"><span class="condition-field">workspace.allow_usb</span><span class="condition-op">eq</span><span class="condition-value">false</span></div>
+</div>
+</div>
+</div>
+<div class="policy-card fade" style="animation-delay:.3s">
+<div class="policy-card-header" onclick="this.parentElement.classList.toggle('open')">
+<div><span class="policy-name">alert-usb-any-workspace</span><span class="policy-badge action-log">LOG</span></div>
+<span class="policy-priority pri-200">PRIORITY 200</span>
+</div>
+<div class="policy-body">
+<p class="policy-desc">Registra todo evento USB para auditoría.</p>
+<div class="trigger-tag">TRIGGER: usb.*</div>
+<div class="condition-list">
+<div class="condition"><span class="condition-field">event_type</span><span class="condition-op">matches</span><span class="condition-value">usb.*</span></div>
+</div>
+</div>
+</div>
+</div>
+
+<h2 style="font-family:var(--font-display);font-size:24px;color:#fff;margin-bottom:20px;letter-spacing:1px">Operators</h2>
+<div class="operators">
+<div class="op-card fade"><div class="op-name">eq</div><div class="op-desc">Equal</div></div>
+<div class="op-card fade" style="animation-delay:.05s"><div class="op-name">neq</div><div class="op-desc">Not Equal</div></div>
+<div class="op-card fade" style="animation-delay:.1s"><div class="op-name">gt</div><div class="op-desc">Greater Than</div></div>
+<div class="op-card fade" style="animation-delay:.15s"><div class="op-name">gte</div><div class="op-desc">Greater or Equal</div></div>
+<div class="op-card fade" style="animation-delay:.2s"><div class="op-name">lt</div><div class="op-desc">Less Than</div></div>
+<div class="op-card fade" style="animation-delay:.25s"><div class="op-name">lte</div><div class="op-desc">Less or Equal</div></div>
+<div class="op-card fade" style="animation-delay:.3s"><div class="op-name">in</div><div class="op-desc">Membership</div></div>
+<div class="op-card fade" style="animation-delay:.35s"><div class="op-name">contains</div><div class="op-desc">Substring</div></div>
+<div class="op-card fade" style="animation-delay:.4s"><div class="op-name">matches</div><div class="op-desc">Regex</div></div>
+<div class="op-card fade" style="animation-delay:.45s"><div class="op-name">between</div><div class="op-desc">Range</div></div>
+</div>
+
+<div class="test-section">
+<div class="test-title">Policy Test Console</div>
+<div class="test-input">
+<input type="text" id="testField" placeholder="field (e.g. risk_score)">
+<select id="testOp"><option value="eq">eq</option><option value="gt">gt</option><option value="gte" selected>gte</option><option value="lt">lt</option><option value="contains">contains</option><option value="in">in</option><option value="matches">matches</option></select>
+<input type="text" id="testValue" placeholder="value (e.g. 0.85)">
+<button class="test-btn" onclick="runTest()">TEST</button>
+</div>
+<div class="test-result" id="testResult"></div>
+</div>
+
+<footer class="footer">
+Hyperium Sovereign-OS — Policy Engine — <a href="https://github.com/hyperiumia/hyperium-sovereign-os">GitHub</a> — <a href="https://www.hyperiumia.com">Hyperium IA</a>
+</footer>
+</div>
+<script>
+function runTest(){
+var f=document.getElementById("testField").value;
+var op=document.getElementById("testOp").value;
+var v=document.getElementById("testValue").value;
+var r=document.getElementById("testResult");
+if(!f||!v){r.innerHTML="Please fill all fields";r.style.borderColor="var(--red)";r.classList.add("show");return}
+var testVal=0.87;
+var result=false;
+if(op==="gte") result=testVal>=parseFloat(v);
+else if(op==="gt") result=testVal>parseFloat(v);
+else if(op==="eq") result=testVal+""===v;
+else if(op==="lt") result=testVal<parseFloat(v);
+else if(op==="contains") result=("risk_score high").includes(v);
+r.style.borderColor=result?"var(--green)":"var(--red)";
+r.innerHTML='<span style="color:'+((result)?'var(--green)':'var(--red))")+';font-weight:700">'+(result?"MATCH — Policy would trigger":"NO MATCH — Event passes")+'</span><br><br>Evaluated: <span style="color:var(--cyan)">'+f+"</span> <span style='color:var(--yellow)'>"+op+"</span> <span style='color:var(--green)'>"+v+"</span><br>Sample value: <span style='color:var(--cyan)'>"+testVal+"</span>";
+r.classList.add("show");
+}
+</script>
+</body>
+</html>

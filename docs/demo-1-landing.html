@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hyperium Sovereign-OS — Landing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0a;--surface:#111;--border:#1a1a1a;--cyan:#00f0ff;--red:#ff2d55;--green:#00ff88;--yellow:#ffd600;--text:#e0e0e0;--muted:#555;--font-display:"Rajdhani",sans-serif;--font-mono:"Space Mono",monospace}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-size:14px;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");opacity:0.03;pointer-events:none;z-index:0}
+.container{max-width:1200px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+a{color:var(--cyan);text-decoration:none}
+.nav{display:flex;justify-content:space-between;align-items:center;padding:20px 0;border-bottom:1px solid var(--border)}
+.nav-brand{font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--cyan);letter-spacing:2px}
+.nav-links{display:flex;gap:24px}
+.nav-links a{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:2px;transition:color .3s}
+.nav-links a:hover{color:var(--cyan)}
+.hero{padding:120px 0 80px;text-align:center;position:relative}
+.hero::before{content:"";position:absolute;top:50%;left:50%;width:600px;height:600px;background:radial-gradient(circle,rgba(0,240,255,0.06) 0%,transparent 70%);transform:translate(-50%,-50%);pointer-events:none}
+.hero h1{font-family:var(--font-display);font-size:72px;font-weight:700;line-height:1;color:#fff;margin-bottom:24px;letter-spacing:4px}
+.hero h1 span{color:var(--cyan)}
+.hero p{font-size:16px;color:var(--muted);max-width:600px;margin:0 auto 40px;line-height:1.8}
+.hero-buttons{display:flex;gap:16px;justify-content:center}
+.btn{padding:14px 32px;font-family:var(--font-mono);font-size:12px;text-transform:uppercase;letter-spacing:2px;border:none;cursor:pointer;transition:all .3s}
+.btn-primary{background:var(--cyan);color:#000;font-weight:700}
+.btn-primary:hover{background:#fff;box-shadow:0 0 30px rgba(0,240,255,0.3)}
+.btn-outline{background:transparent;color:var(--cyan);border:1px solid var(--cyan)}
+.btn-outline:hover{background:rgba(0,240,255,0.1)}
+.badge-row{display:flex;gap:12px;justify-content:center;margin-bottom:40px}
+.badge{padding:6px 14px;border:1px solid var(--border);font-size:11px;color:var(--muted);letter-spacing:1px}
+.section{padding:80px 0}
+.section-title{font-family:var(--font-display);font-size:42px;font-weight:700;color:#fff;text-align:center;margin-bottom:16px;letter-spacing:2px}
+.section-sub{color:var(--muted);text-align:center;max-width:600px;margin:0 auto 60px;font-size:14px;line-height:1.7}
+.pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:32px}
+.pillar{background:var(--surface);border:1px solid var(--border);padding:40px 32px;text-align:center;transition:all .4s;position:relative;overflow:hidden}
+.pillar::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--cyan);transform:scaleX(0);transition:transform .4s}
+.pillar:hover::before{transform:scaleX(1)}
+.pillar:hover{border-color:var(--cyan);transform:translateY(-4px)}
+.pillar-icon{font-size:48px;margin-bottom:20px;display:block}
+.pillar h3{font-family:var(--font-display);font-size:22px;color:#fff;margin-bottom:12px;letter-spacing:1px}
+.pillar p{color:var(--muted);font-size:13px;line-height:1.7}
+.features{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
+.feature{background:var(--surface);border:1px solid var(--border);padding:32px;display:flex;gap:20px;transition:all .3s}
+.feature:hover{border-color:rgba(0,240,255,0.3)}
+.feature-icon{font-size:28px;flex-shrink:0;width:48px;text-align:center}
+.feature h4{font-family:var(--font-display);font-size:18px;color:#fff;margin-bottom:8px}
+.feature p{color:var(--muted);font-size:13px;line-height:1.6}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;text-align:center;padding:60px 0}
+.stat{padding:32px}
+.stat-num{font-family:var(--font-display);font-size:52px;font-weight:700;color:var(--cyan);line-height:1}
+.stat-label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:2px;margin-top:8px}
+.arch{background:var(--surface);border:1px solid var(--border);padding:40px;font-family:var(--font-mono);font-size:13px;color:var(--green);line-height:1.6;overflow-x:auto;white-space:pre}
+.cta{text-align:center;padding:100px 0}
+.cta h2{font-family:var(--font-display);font-size:48px;color:#fff;margin-bottom:16px}
+.cta p{color:var(--muted);margin-bottom:32px;font-size:14px}
+.footer{border-top:1px solid var(--border);padding:40px 0;text-align:center;color:var(--muted);font-size:12px}
+.footer a{color:var(--cyan)}
+.grid-bg{position:fixed;inset:0;background-image:linear-gradient(rgba(0,240,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,240,255,0.03) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+.pulse{animation:pulse 2s infinite}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="container">
+<nav class="nav">
+<div class="nav-brand">HYPERIUM</div>
+<div class="nav-links">
+<a href="#pillars">Pilares</a>
+<a href="#features">Funciones</a>
+<a href="#stats">Números</a>
+<a href="#arquitectura">Arquitectura</a>
+<a href="https://github.com/hyperiumia/hyperium-sovereign-os">GitHub</a>
+</div>
+</nav>
+<section class="hero">
+<div class="badge-row">
+<span class="badge">v0.1.0</span>
+<span class="badge">PYTHON 3.12</span>
+<span class="badge">RUST</span>
+<span class="badge">74/74 TESTS</span>
+</div>
+<h1>SOVEREIGN<span>-OS</span></h1>
+<p>Sistema de Soberanía Corporativa y Anti-Espionaje. Protege tu código fuente, propiedad intelectual y secretos industriales con evidencia criptográfica inmutable.</p>
+<div class="hero-buttons">
+<a class="btn btn-primary" href="https://github.com/hyperiumia/hyperium-sovereign-os">VER REPOSITORIO</a>
+<a class="btn btn-outline" href="#pillars">CONOCER MÁS</a>
+</div>
+</section>
+<section class="section" id="pillars">
+<h2 class="section-title">TRÍADA DE SOBERANÍA</h2>
+<p class="section-sub">Tres pilares que garantizan protección total contra espionaje corporativo, insider threats y ransomware.</p>
+<div class="pillars">
+<div class="pillar">
+<span class="pillar-icon">🔒</span>
+<h3>SOBERANÍA DEL DATO</h3>
+<p>Control absoluto sobre quién accede a datos críticos. Entornos aislados donde nadie puede mover información sin autorización explícita del sistema.</p>
+</div>
+<div class="pillar">
+<span class="pillar-icon">👁️</span>
+<h3>SOBERANÍA OPERACIONAL</h3>
+<p>Monitoreo en tiempo real de USB, red, filesystem y sesiones. Detección instantánea de exfiltración, comportamiento anómalo y manipulación.</p>
+</div>
+<div class="pillar">
+<span class="pillar-icon">⚖️</span>
+<h3>SOBERANÍA PROBATORIA</h3>
+<p>Cada evento firma SHA-256 + HMAC + Merkle tree + Ed25519. Cadena de custodia inmutable con valor legal para tribunales y reguladores.</p>
+</div>
+</div>
+</section>
+<section class="section" id="features">
+<h2 class="section-title">CAPACIDADES</h2>
+<p class="section-sub">Detección, contención y evidencia en una sola plataforma.</p>
+<div class="features">
+<div class="feature">
+<div class="feature-icon">📡</div>
+<div><h4>4 Monitores en Tiempo Real</h4><p>USB, red, filesystem (inotify) y sesiones. Cada monitor opera independientemente con polling optimizado.</p></div>
+</div>
+<div class="feature">
+<div class="feature-icon">🧊</div>
+<div><h4>Enforcement Automático</h4><p>FREEZE (bloqueo de pantalla), ISOLATE (iptables), BLOCK (acción específica). Respuesta en milisegundos.</p></div>
+</div>
+<div class="feature">
+<div class="feature-icon">🌳</div>
+<div><h4>Merkle Tree + Ed25519</h4><p>Evidence Vault con árbol de Merkle y firmas de epoch. Verificación end-to-end con un solo endpoint.</p></div>
+</div>
+<div class="feature">
+<div class="feature-icon">📋</div>
+<div><h4>Policy Engine Declarativo</h4><p>Políticas en YAML con 10 operadores, wildcards, prioridades y condiciones AND. 7 políticas preconfiguradas.</p></div>
+</div>
+<div class="feature">
+<div class="feature-icon">📊</div>
+<div><h4>Risk Engine Multifactor</h4><p>Scoring basado en volumen, eventos de seguridad, horario, clasificación de workspace e historial de usuario.</p></div>
+</div>
+<div class="feature">
+<div class="feature-icon">🔌</div>
+<div><h4>Resiliencia Offline</h4><p>Cola persistente en JSONL, retry con backoff exponencial, batch sending. Nunca pierde un evento.</p></div>
+</div>
+</div>
+</section>
+<section class="section" id="stats">
+<div class="stats">
+<div class="stat"><div class="stat-num">74</div><div class="stat-label">Tests Passing</div></div>
+<div class="stat"><div class="stat-num">4</div><div class="stat-label">Monitores Activos</div></div>
+<div class="stat"><div class="stat-num">15+</div><div class="stat-label">Endpoints REST</div></div>
+<div class="stat"><div class="stat-num">0</div><div class="stat-label">Dependencias Externas</div></div>
+</div>
+</section>
+<section class="section" id="arquitectura">
+<h2 class="section-title">ARQUITECTURA</h2>
+<p class="section-sub">Servidor Python + Agent Rust. Todo on-premise, sin nube, sin telemetría.</p>
+<div class="arch">┌─────────────────────────────────────────────────────────────────┐
+│                     CORPORATE NETWORK                           │
+│                                                                  │
+│  ┌──────────────┐  ┌──────────────┐  ┌────────────────────────┐ │
+│  │  Workstation  │  │  Workstation  │  │      Server            │ │
+│  │ ┌──────────┐ │  │ ┌──────────┐ │  │ ┌────────────────────┐ │ │
+│  │ │  Agent   │ │  │ │  Agent   │ │  │ │  Evidence Vault    │ │ │
+│  │ │  (Rust)  │ │  │ │  (Rust)  │ │  │ │  Policy Engine     │ │ │
+│  │ │          │ │  │ │          │ │  │ │  Risk Engine       │ │ │
+│  │ │ USB  Net │ │  │ │ USB  Net │ │  │ │  REST API (15+)    │ │ │
+│  │ │ FS   Sess│ │  │ │ FS   Sess│ │  │ │                    │ │ │
+│  │ └──────────┘ │  │ └──────────┘ │  │ │ SHA256 + HMAC      │ │ │
+│  │              │  │              │  │ │ Merkle + Ed25519   │ │ │
+│  └──────────────┘  └──────────────┘  │ └────────────────────┘ │ │
+│                                      └────────────────────────┘ │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │  Enforcement: FREEZE | ISOLATE | BLOCK                    │   │
+│  │  Cola offline JSONL | Retry backoff | Batch 50 eventos    │   │
+│  └──────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘</div>
+</section>
+<section class="cta">
+<h2>La soberanía corporativa no es un lujo.</h2>
+<p>Es una necesidad operable.</p>
+<a class="btn btn-primary" href="https://github.com/hyperiumia/hyperium-sovereign-os">EXPLORAR EN GITHUB</a>
+</section>
+<footer class="footer">
+<p>Hyperium Sovereign-OS v0.1.0 — Propiedad de <a href="https://www.hyperiumia.com">Hyperium IA</a></p>
+</footer>
+</div>
+</body>
+</html>

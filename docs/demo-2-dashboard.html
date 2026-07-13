@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sovereign-OS — Security Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080808;--surface:#111;--border:#1a1a1a;--cyan:#00f0ff;--red:#ff2d55;--green:#00ff88;--yellow:#ffd600;--orange:#ff9500;--text:#e0e0e0;--muted:#555;--font-display:"Rajdhani",sans-serif;--font-mono:"Space Mono",monospace}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-size:13px;min-height:100vh}
+.grid-bg{position:fixed;inset:0;background-image:linear-gradient(rgba(0,240,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,240,255,0.02) 1px,transparent 1px);background-size:40px 40px;pointer-events:none}
+.header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid var(--border);background:rgba(17,17,17,0.9);backdrop-filter:blur(10px);position:sticky;top:0;z-index:10}
+.header-left{display:flex;align-items:center;gap:16px}
+.logo{font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--cyan);letter-spacing:2px}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;margin-right:6px;animation:pulse 2s infinite}
+.status-text{color:var(--green);font-size:11px;text-transform:uppercase;letter-spacing:1px}
+.header-right{display:flex;gap:16px;align-items:center}
+.time{color:var(--muted);font-size:12px}
+.main{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;padding:16px 24px}
+.card{background:var(--surface);border:1px solid var(--border);padding:20px;position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;top:0;left:0;right:0;height:1px}
+.card-cyan::before{background:var(--cyan)}
+.card-green::before{background:var(--green)}
+.card-red::before{background:var(--red)}
+.card-yellow::before{background:var(--yellow)}
+.card-label{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:8px}
+.card-value{font-family:var(--font-display);font-size:36px;font-weight:700;color:#fff;line-height:1}
+.card-value.cyan{color:var(--cyan)}
+.card-value.green{color:var(--green)}
+.card-value.red{color:var(--red)}
+.card-value.yellow{color:var(--yellow)}
+.card-change{font-size:11px;margin-top:4px}
+.card-change.up{color:var(--green)}
+.card-change.down{color:var(--red)}
+.grid-2{display:grid;grid-template-columns:2fr 1fr;gap:16px;padding:0 24px 16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;padding:0 24px 16px}
+.panel{background:var(--surface);border:1px solid var(--border);padding:20px}
+.panel-title{font-family:var(--font-display);font-size:16px;font-weight:600;color:#fff;margin-bottom:16px;letter-spacing:1px;display:flex;justify-content:space-between;align-items:center}
+.panel-title .count{color:var(--cyan);font-size:13px}
+.event-list{max-height:400px;overflow-y:auto}
+.event-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);animation:fadeIn .5s ease}
+.event-item:last-child{border-bottom:none}
+.sev{width:4px;height:32px;border-radius:2px;flex-shrink:0}
+.sev-critical{background:var(--red)}
+.sev-high{background:var(--orange)}
+.sev-medium{background:var(--yellow)}
+.sev-low{background:var(--green)}
+.event-info{flex:1;min-width:0}
+.event-type{font-size:12px;color:#fff;font-weight:700}
+.event-detail{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.event-time{font-size:10px;color:var(--muted);white-space:nowrap}
+.monitor-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.monitor-card{border:1px solid var(--border);padding:14px;position:relative}
+.monitor-status{position:absolute;top:14px;right:14px;width:6px;height:6px;border-radius:50%}
+.monitor-status.active{background:var(--green);box-shadow:0 0 8px var(--green)}
+.monitor-name{font-family:var(--font-display);font-size:14px;color:#fff;margin-bottom:4px}
+.monitor-detail{font-size:11px;color:var(--muted)}
+.chart-container{height:200px;display:flex;align-items:flex-end;gap:4px;padding-top:20px}
+.chart-bar{flex:1;background:var(--cyan);border-radius:2px 2px 0 0;transition:height .5s ease;opacity:0.7;min-height:4px}
+.chart-bar:hover{opacity:1}
+.alert-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.alert-item:last-child{border-bottom:none}
+.alert-msg{font-size:12px;color:#fff}
+.alert-badge{font-size:10px;padding:3px 8px;text-transform:uppercase;letter-spacing:1px}
+.badge-critical{background:rgba(255,45,85,0.2);color:var(--red);border:1px solid rgba(255,45,85,0.3)}
+.badge-high{background:rgba(255,149,0,0.2);color:var(--orange);border:1px solid rgba(255,149,0,0.3)}
+.badge-medium{background:rgba(255,214,0,0.2);color:var(--yellow);border:1px solid rgba(255,214,0,0.3)}
+.risk-gauge{text-align:center;padding:20px 0}
+.risk-value{font-family:var(--font-display);font-size:64px;font-weight:700}
+.risk-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-top:8px}
+.risk-bar{height:6px;background:var(--border);margin-top:16px;border-radius:3px;overflow:hidden}
+.risk-fill{height:100%;border-radius:3px;transition:width 1s ease}
+.policy-summary{margin-top:12px}
+.policy-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
+.policy-row:last-child{border-bottom:none}
+.policy-name{color:#fff}
+.policy-status{font-size:10px;padding:2px 8px;text-transform:uppercase}
+.status-active{color:var(--green);border:1px solid rgba(0,255,136,0.3)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+@keyframes fadeIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.slide-up{animation:slideUp .6s ease forwards}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="header">
+<div class="header-left">
+<div class="logo">SOVEREIGN-OS</div>
+<span class="status-dot"></span>
+<span class="status-text">All systems operational</span>
+</div>
+<div class="header-right">
+<span class="time" id="clock">--:--:--</span>
+<span style="color:var(--muted);font-size:11px">agent-001 / workstation-alpha</span>
+</div>
+</div>
+<div class="main">
+<div class="card card-cyan slide-up"><div class="card-label">Events Today</div><div class="card-value cyan" id="eventCount">1,247</div><div class="card-change up">+23 vs yesterday</div></div>
+<div class="card card-green slide-up" style="animation-delay:.1s"><div class="card-label">Monitors Active</div><div class="card-value green">4/4</div><div class="card-change up">USB · Net · FS · Session</div></div>
+<div class="card card-red slide-up" style="animation-delay:.2s"><div class="card-label">Active Alerts</div><div class="card-value red" id="alertCount">3</div><div class="card-change down">2 CRITICAL</div></div>
+<div class="card card-yellow slide-up" style="animation-delay:.3s"><div class="card-label">Evidence Sealed</div><div class="card-value yellow">34</div><div class="card-change up">Epoch 0 · Merkle verified</div></div>
+</div>
+<div class="grid-2">
+<div class="panel">
+<div class="panel-title">Event Feed <span class="count" id="feedCount">live</span></div>
+<div class="event-list" id="eventFeed"></div>
+</div>
+<div class="panel">
+<div class="panel-title">Monitors</div>
+<div class="monitor-grid">
+<div class="monitor-card"><div class="monitor-status active"></div><div class="monitor-name">USB</div><div class="monitor-detail">Polling /sys/bus/usb · 2s</div></div>
+<div class="monitor-card"><div class="monitor-status active"></div><div class="monitor-name">Network</div><div class="monitor-detail">Parsing /proc/net/tcp · 3s</div></div>
+<div class="monitor-card"><div class="monitor-status active"></div><div class="monitor-name">Filesystem</div><div class="monitor-detail">inotify · /tmp, /home</div></div>
+<div class="monitor-card"><div class="monitor-status active"></div><div class="monitor-name">Session</div><div class="monitor-detail">who + env · realtime</div></div>
+</div>
+<div style="margin-top:20px">
+<div class="panel-title">Risk Score</div>
+<div class="risk-gauge">
+<div class="risk-value" style="color:var(--yellow)" id="riskScore">0.42</div>
+<div class="risk-label">Medium Risk</div>
+<div class="risk-bar"><div class="risk-fill" style="width:42%;background:linear-gradient(90deg,var(--green),var(--yellow))"></div></div>
+</div>
+</div>
+</div>
+</div>
+<div class="grid-3">
+<div class="panel">
+<div class="panel-title">Events / Hour</div>
+<div class="chart-container" id="chart"></div>
+</div>
+<div class="panel">
+<div class="panel-title">Active Policies</div>
+<div class="policy-summary">
+<div class="policy-row"><span class="policy-name">isolate-ransomware</span><span class="policy-status status-active">ACTIVE</span></div>
+<div class="policy-row"><span class="policy-name">isolate-log-deletion</span><span class="policy-status status-active">ACTIVE</span></div>
+<div class="policy-row"><span class="policy-name">freeze-high-risk</span><span class="policy-status status-active">ACTIVE</span></div>
+<div class="policy-row"><span class="policy-name">block-airgap-network</span><span class="policy-status status-active">ACTIVE</span></div>
+<div class="policy-row"><span class="policy-name">freeze-large-transfer</span><span class="policy-status status-active">ACTIVE</span></div>
+<div class="policy-row"><span class="policy-name">block-usb-confidential</span><span class="policy-status status-active">ACTIVE</span></div>
+<div class="policy-row"><span class="policy-name">alert-usb-any</span><span class="policy-status status-active">ACTIVE</span></div>
+</div>
+</div>
+<div class="panel">
+<div class="panel-title">Recent Alerts</div>
+<div id="alertList">
+<div class="alert-item"><span class="alert-msg">USB storage detected</span><span class="alert-badge badge-critical">CRITICAL</span></div>
+<div class="alert-item"><span class="alert-msg">Log deletion attempt</span><span class="alert-badge badge-critical">CRITICAL</span></div>
+<div class="alert-item"><span class="alert-msg">External connection :443</span><span class="alert-badge badge-medium">MEDIUM</span></div>
+</div>
+</div>
+</div>
+<script>
+const events=[
+{type:"network.connection.new",detail:"192.168.1.45:443 -> 10.0.3.12:8080",sev:"low",sevClass:"sev-low"},
+{type:"filesystem.file_created",detail:"/tmp/report_final_v2.xlsx",sev:"low",sevClass:"sev-low"},
+{type:"session.change",detail:"User: h0eth777 · Display :0",sev:"low",sevClass:"sev-low"},
+{type:"usb.storage.connected",detail:"Kingston DataTraveler 32GB",sev:"high",sevClass:"sev-high"},
+{type:"network.connection.new",detail:"10.0.3.12:39830 -> 185.220.101.45:443",sev:"medium",sevClass:"sev-medium"},
+{type:"filesystem.file_deleted",detail:"/var/log/auth.log",sev:"critical",sevClass:"sev-critical"},
+{type:"network.connection.new",detail:"10.0.3.12:52481 -> 45.33.32.156:8443",sev:"medium",sevClass:"sev-medium"},
+{type:"filesystem.file_created",detail:"/home/user/docs/readme.txt",sev:"critical",sevClass:"sev-critical"},
+{type:"session.change",detail:"User: h0eth777 locked screen",sev:"low",sevClass:"sev-low"},
+{type:"network.dns.query",detail:"suspicious-c2.evil.com",sev:"high",sevClass:"sev-high"},
+{type:"filesystem.mass_encrypt",detail:"*.locked detected in /home/docs",sev:"critical",sevClass:"sev-critical"},
+{type:"usb.storage.removed",detail:"Kingston DataTraveler ejected",sev:"medium",sevClass:"sev-medium"},
+];
+const feed=document.getElementById("eventFeed");
+let idx=0;
+function addEvent(){
+const e=events[idx%events.length];
+idx++;
+const now=new Date().toISOString().substring(11,19);
+const div=document.createElement("div");
+div.className="event-item";
+div.innerHTML='<div class="sev '+e.sevClass+'"></div><div class="event-info"><div class="event-type">'+e.type+'</div><div class="event-detail">'+e.detail+'</div></div><div class="event-time">'+now+'</div>';
+feed.insertBefore(div,feed.firstChild);
+if(feed.children.length>20)feed.removeChild(feed.lastChild);
+}
+for(let i=0;i<6;i++) addEvent();
+setInterval(addEvent,3000);
+function updateClock(){
+document.getElementById("clock").textContent=new Date().toISOString().substring(11,19)+" UTC";
+}
+updateClock();setInterval(updateClock,1000);
+const chart=document.getElementById("chart");
+const vals=[12,19,8,25,32,18,41,28,15,22,35,20,14,27,31,16,23,38,11,29,24,33,17,26];
+vals.forEach(v=>{const bar=document.createElement("div");bar.className="chart-bar";bar.style.height=(v/41*100)+"%";chart.appendChild(bar)});
+</script>
+</body>
+</html>

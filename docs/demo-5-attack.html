@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sovereign-OS — Attack Simulation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080808;--surface:#111;--border:#1a1a1a;--cyan:#00f0ff;--red:#ff2d55;--green:#00ff88;--yellow:#ffd600;--orange:#ff9500;--text:#e0e0e0;--muted:#555;--font-display:"Rajdhani",sans-serif;--font-mono:"Space Mono",monospace}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-size:13px;min-height:100vh}
+.grid-bg{position:fixed;inset:0;background-image:linear-gradient(rgba(0,240,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,240,255,0.02) 1px,transparent 1px);background-size:40px 40px;pointer-events:none}
+.header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid var(--border);background:rgba(17,17,17,0.9);backdrop-filter:blur(10px);position:sticky;top:0;z-index:10}
+.logo{font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--cyan);letter-spacing:2px}
+.container{max-width:900px;margin:0 auto;padding:32px 24px;position:relative;z-index:1}
+h1{font-family:var(--font-display);font-size:36px;color:#fff;margin-bottom:8px;letter-spacing:2px}
+.subtitle{color:var(--muted);margin-bottom:40px;font-size:14px;line-height:1.7}
+.scenario-box{background:var(--surface);border:1px solid var(--border);padding:20px;margin-bottom:40px}
+.scenario-title{font-family:var(--font-display);font-size:16px;color:var(--red);margin-bottom:8px;text-transform:uppercase;letter-spacing:2px}
+.scenario-desc{color:var(--muted);font-size:12px;line-height:1.7}
+.timeline{position:relative;padding-left:40px}
+.timeline::before{content:"";position:absolute;left:15px;top:0;bottom:0;width:2px;background:var(--border)}
+.step{position:relative;margin-bottom:0;padding:24px 0;opacity:0;transform:translateY(20px);transition:all .6s ease}
+.step.visible{opacity:1;transform:translateY(0)}
+.step-dot{position:absolute;left:-33px;top:28px;width:12px;height:12px;border-radius:50%;border:2px solid var(--border);background:var(--bg);z-index:1;transition:all .4s}
+.step.active .step-dot{border-color:var(--cyan);background:var(--cyan);box-shadow:0 0 12px rgba(0,240,255,0.4)}
+.step.detected .step-dot{border-color:var(--green);background:var(--green);box-shadow:0 0 12px rgba(0,255,136,0.4)}
+.step.blocked .step-dot{border-color:var(--red);background:var(--red);box-shadow:0 0 12px rgba(255,45,85,0.4)}
+.step-time{font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:6px}
+.step-title{font-family:var(--font-display);font-size:20px;color:#fff;font-weight:600;margin-bottom:4px}
+.step-desc{color:var(--muted);font-size:12px;line-height:1.6;margin-bottom:12px}
+.step-detail{background:rgba(0,0,0,0.4);border:1px solid var(--border);padding:12px 16px;font-size:11px;line-height:1.7}
+.step-detail code{color:var(--cyan)}
+.step-detail .action{color:var(--red);font-weight:700}
+.step-detail .detect{color:var(--green);font-weight:700}
+.step-detail .info{color:var(--yellow)}
+.severity-tag{display:inline-block;padding:2px 8px;font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.sev-critical{background:rgba(255,45,85,0.15);color:var(--red);border:1px solid rgba(255,45,85,0.3)}
+.sev-high{background:rgba(255,149,0,0.15);color:var(--orange);border:1px solid rgba(255,149,0,0.3)}
+.sev-medium{background:rgba(255,214,0,0.15);color:var(--yellow);border:1px solid rgba(255,214,0,0.3)}
+.sev-low{background:rgba(0,255,136,0.15);color:var(--green);border:1px solid rgba(0,255,136,0.3)}
+.response-box{background:rgba(0,255,136,0.05);border:1px solid rgba(0,255,136,0.2);padding:16px 20px;margin-top:12px}
+.response-title{font-family:var(--font-display);font-size:14px;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:2px}
+.evidence-box{background:var(--surface);border:1px solid var(--border);padding:24px;margin:40px 0}
+.evidence-title{font-family:var(--font-display);font-size:20px;color:var(--cyan);margin-bottom:16px}
+.evidence-table{width:100%;border-collapse:collapse}
+.evidence-table th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:8px;border-bottom:1px solid var(--border)}
+.evidence-table td{padding:8px;border-bottom:1px solid var(--border);font-size:11px}
+.final-box{text-align:center;padding:60px 0}
+.final-box h2{font-family:var(--font-display);font-size:36px;color:#fff;margin-bottom:12px}
+.final-box p{color:var(--muted);margin-bottom:24px;font-size:14px}
+.btn{display:inline-block;padding:14px 32px;font-family:var(--font-mono);font-size:12px;text-transform:uppercase;letter-spacing:2px;text-decoration:none;transition:all .3s}
+.btn-primary{background:var(--cyan);color:#000;font-weight:700}
+.btn-primary:hover{background:#fff;box-shadow:0 0 30px rgba(0,240,255,0.3)}
+.btn-outline{background:transparent;color:var(--cyan);border:1px solid var(--cyan);margin-left:12px}
+.btn-outline:hover{background:rgba(0,240,255,0.1)}
+.footer{text-align:center;padding:40px 0;color:var(--muted);font-size:11px;border-top:1px solid var(--border);margin-top:40px}
+.footer a{color:var(--cyan)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="header">
+<div class="logo">SOVEREIGN-OS</div>
+<div style="font-size:11px;color:var(--red)">SIMULATION</div>
+</div>
+<div class="container">
+<h1>ATTACK SIMULATION</h1>
+<p class="subtitle">Escenario completo de insider threat. Cada paso muestra cómo Sovereign-OS detecta, clasifica y responde a la amenaza en tiempo real.</p>
+
+<div class="scenario-box">
+<div class="scenario-title">Scenario: Insider Threat — Data Exfiltration + Cover-up</div>
+<div class="scenario-desc">Un empleado con acceso legítimo intenta exfiltrar propiedad intelectual por USB, transferir datos masivamente por red, y borrar logs para cubrir sus huellas. Finalmente un script de ransomware se ejecuta accidentalmente.</div>
+</div>
+
+<div class="timeline">
+
+<div class="step visible" id="step1">
+<div class="step-dot"></div>
+<div class="step-time">T+0s · 09:15:22 UTC</div>
+<div class="step-title">USB Storage Connected</div>
+<span class="severity-tag sev-medium">MEDIUM</span>
+<div class="step-desc">Un dispositivo USB de almacenamiento se conecta a la workstation.</div>
+<div class="step-detail">
+<code>[USB Monitor]</code> Kingston DataTraveler 3.0 (32GB) detected on bus 001<br>
+Device class: Mass Storage · Serial: 0019E06B4C8BED91672B0BE7<br>
+Workspace classification: <span class="info">CONFIDENTIAL</span><br>
+USB allowed: <span class="action">false</span>
+</div>
+<div class="response-box">
+<div class="response-title">Sovereign-OS Response</div>
+Policy matched: <code>block-usb-confidential</code> (priority 10)<br>
+Action: <span class="action">BLOCK</span> — USB storage access denied<br>
+Evidence: Event sealed in Evidence Vault, leaf #24, epoch 0
+</div>
+</div>
+
+<div class="step visible" id="step2" style="animation-delay:.2s">
+<div class="step-dot"></div>
+<div class="step-time">T+45s · 09:16:07 UTC</div>
+<div class="step-title">Mass Data Transfer Detected</div>
+<span class="severity-tag sev-critical">CRITICAL</span>
+<div class="step-desc">Se detecta una transferencia de 847MB hacia una IP externa.</div>
+<div class="step-detail">
+<code>[Network Monitor]</code> Outbound connection: 10.0.3.12:52481 → 185.220.101.45:443<br>
+Data volume: <span class="action">847MB</span> in 45 seconds<br>
+Known C2 endpoint: <span class="action">YES</span> (threat intel match)<br>
+Risk score impact: <span class="info">+0.35</span>
+</div>
+<div class="response-box">
+<div class="response-title">Sovereign-OS Response</div>
+Policy matched: <code>freeze-large-transfer</code> (priority 5)<br>
+Action: <span class="action">ALERT_AND_FREEZE</span> — Screen locked, suspicious processes killed<br>
+Risk score updated: <span class="action">0.87</span> → triggers <code>freeze-high-risk-session</code>
+</div>
+</div>
+
+<div class="step visible" id="step3" style="animation-delay:.4s">
+<div class="step-dot"></div>
+<div class="step-time">T+120s · 09:17:22 UTC</div>
+<div class="step-title">Log Deletion Attempt</div>
+<span class="severity-tag sev-critical">CRITICAL</span>
+<div class="step-desc">Intento de borrar /var/log/auth.log y /var/log/syslog para destruir evidencia.</div>
+<div class="step-detail">
+<code>[Filesystem Monitor]</code> DELETE event on /var/log/auth.log<br>
+<code>[Filesystem Monitor]</code> DELETE event on /var/log/syslog<br>
+Pattern match: <span class="action">log_deletion_attempt</span>
+</div>
+<div class="response-box">
+<div class="response-title">Sovereign-OS Response</div>
+Policy matched: <code>isolate-log-deletion</code> (priority 0 — CRITICAL)<br>
+Action: <span class="action">ISOLATE</span> — iptables DROP all outbound except to Sovereign server<br>
+Network isolated. Machine still reports to server via secured channel.<br>
+Evidence: All deletion events sealed with SHA-256 + HMAC + Merkle position
+</div>
+</div>
+
+<div class="step visible" id="step4" style="animation-delay:.6s">
+<div class="step-dot"></div>
+<div class="step-time">T+180s · 09:18:22 UTC</div>
+<div class="step-title">Ransomware Pattern Detected</div>
+<span class="severity-tag sev-critical">CRITICAL</span>
+<div class="step-desc">Archivos .locked aparecen en /home/user/documents. Patrón de cifrado masivo.</div>
+<div class="step-detail">
+<code>[Filesystem Monitor]</code> CREATE: report_q3.xlsx.locked<br>
+<code>[Filesystem Monitor]</code> CREATE: contracts_2024.pdf.locked<br>
+<code>[Filesystem Monitor]</code> CREATE: source_code.tar.locked<br>
+<code>[Filesystem Monitor]</code> CREATE: how_to_decrypt.txt<br>
+Pattern match: <span class="action">mass_encrypt</span> — ransomware signature
+</div>
+<div class="response-box">
+<div class="response-title">Sovereign-OS Response</div>
+Policy matched: <code>isolate-ransomware-signal</code> (priority 0 — MAXIMUM)<br>
+Action: <span class="action">ISOLATE</span> — Already isolated from step 3. Additional: all user processes killed.<br>
+Alert escalated to SOC with CRITICAL severity.<br>
+Forensic case auto-created with all sealed evidence attached.
+</div>
+</div>
+
+<div class="step visible" id="step5" style="animation-delay:.8s">
+<div class="step-dot detected"></div>
+<div class="step-time">T+185s · 09:18:27 UTC</div>
+<div class="step-title">Evidence Sealed & Verified</div>
+<span class="severity-tag sev-low">VERIFIED</span>
+<div class="step-desc">Toda la cadena de eventos ha sido sellada criptográficamente y es verificable.</div>
+<div class="step-detail">
+<code>[Evidence Vault]</code> Epoch 0 sealed at 34 events<br>
+Merkle root: <span class="detect">a3f8c2e1b7d4...</span><br>
+Ed25519 signature: <span class="detect">VALID</span><br>
+All 34 leaf hashes: <span class="detect">VERIFIED</span><br>
+Chain of custody: <span class="detect">INTACT</span><br>
+Tampering detected: <span class="detect">NONE</span>
+</div>
+</div>
+
+</div>
+
+<div class="evidence-box">
+<div class="evidence-title">Evidence Summary</div>
+<table class="evidence-table">
+<thead><tr><th>Time</th><th>Event</th><th>Severity</th><th>Policy</th><th>Action</th><th>Sealed</th></tr></thead>
+<tbody>
+<tr><td>09:15:22</td><td>USB connected</td><td style="color:var(--yellow)">MEDIUM</td><td>block-usb-confidential</td><td style="color:var(--orange)">BLOCK</td><td style="color:var(--green)">Yes</td></tr>
+<tr><td>09:16:07</td><td>847MB transfer</td><td style="color:var(--red)">CRITICAL</td><td>freeze-large-transfer</td><td style="color:var(--red)">FREEZE</td><td style="color:var(--green)">Yes</td></tr>
+<tr><td>09:17:22</td><td>Log deletion</td><td style="color:var(--red)">CRITICAL</td><td>isolate-log-deletion</td><td style="color:var(--red)">ISOLATE</td><td style="color:var(--green)">Yes</td></tr>
+<tr><td>09:18:22</td><td>Ransomware</td><td style="color:var(--red)">CRITICAL</td><td>isolate-ransomware</td><td style="color:var(--red)">ISOLATE</td><td style="color:var(--green)">Yes</td></tr>
+<tr><td>09:18:27</td><td>Epoch sealed</td><td style="color:var(--green)">VERIFIED</td><td>—</td><td>—</td><td style="color:var(--green)">Ed25519</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="final-box">
+<h2>Threat Contained in 3 Minutes</h2>
+<p>Detección automática. Contención sin intervención humana. Evidencia sellada con valor legal.</p>
+<a class="btn btn-primary" href="https://github.com/hyperiumia/hyperium-sovereign-os">VER EN GITHUB</a>
+<a class="btn btn-outline" href="https://www.hyperiumia.com">HYPERIUM IA</a>
+</div>
+
+<footer class="footer">
+Hyperium Sovereign-OS — Attack Simulation — <a href="https://github.com/hyperiumia/hyperium-sovereign-os">GitHub</a> — <a href="https://www.hyperiumia.com">Hyperium IA</a>
+</footer>
+</div>
+</body>
+</html>
