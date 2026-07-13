@@ -380,14 +380,239 @@ def get_iso_27001():
     }
 
 
+
+
+# === SOC 2 Type II ===
+SOC2_CONTROLS = [
+    c("CC1.1", "Management demonstrates integrity and ethical values", "CC1", "Control Environment",
+      "policy_engine", "covered", "Policy engine enforces organizational values through automated rules"),
+    c("CC1.2", "Board exercises oversight of internal controls", "CC1", "Control Environment",
+      "compliance_mapper", "partial", "Compliance reporting provides board-level visibility"),
+    c("CC1.3", "Management establishes authority and responsibility", "CC1", "Control Environment",
+      "access_grants", "covered", "Access grants define authority with workspace-level granularity"),
+    c("CC1.4", "Competence commitment is demonstrated", "CC1", "Control Environment",
+      "none", "not_applicable", "HR process outside tool scope"),
+    c("CC1.5", "Accountability for internal controls is enforced", "CC1", "Control Environment",
+      "evidence_vault", "covered", "All actions signed and sealed with immutable evidence"),
+
+    c("CC2.1", "Internal control information is generated", "CC2", "Communication",
+      "event_logging", "covered", "All events logged with 14 fields, signed, and sealed"),
+    c("CC2.2", "Internal control information is communicated internally", "CC2", "Communication",
+      "alert_system", "covered", "Alert system communicates control violations to stakeholders"),
+    c("CC2.3", "Communication with external parties", "CC2", "Communication",
+      "alert_system", "partial", "Internal alerts complete; external notification needs integration"),
+
+    c("CC3.1", "Risk assessment considers objectives", "CC3", "Risk Assessment",
+      "risk_engine", "covered", "Risk Engine evaluates multi-factor risk against business objectives"),
+    c("CC3.2", "Risk of fraud is considered", "CC3", "Risk Assessment",
+      "risk_engine", "covered", "User history and anomaly detection identify fraud indicators"),
+    c("CC3.3", "Significant changes are identified", "CC3", "Risk Assessment",
+      "filesystem_monitor", "covered", "Filesystem Monitor detects significant file changes"),
+    c("CC3.4", "Fraud risk factors are identified", "CC3", "Risk Assessment",
+      "risk_engine", "covered", "Multi-factor risk scoring identifies fraud patterns"),
+
+    c("CC4.1", "Ongoing and separate evaluations are performed", "CC4", "Monitoring",
+      "all_monitors", "covered", "4 continuous monitors provide ongoing evaluation"),
+    c("CC4.2", "Internal control deficiencies are communicated", "CC4", "Monitoring",
+      "alert_system", "covered", "Alert system communicates deficiencies with severity classification"),
+
+    c("CC5.1", "Management designs control activities", "CC5", "Control Activities",
+      "policy_engine", "covered", "Declarative YAML policies define control activities"),
+    c("CC5.2", "Technology general controls are deployed", "CC5", "Control Activities",
+      "enforcement", "covered", "Enforcement actions (FREEZE/ISOLATE/BLOCK) deploy controls"),
+    c("CC5.3", "Policies and procedures are implemented", "CC5", "Control Activities",
+      "policy_engine", "covered", "Policies loaded from YAML, evaluated against every event"),
+
+    c("CC6.1", "Logical access controls are implemented", "CC6", "Logical Access",
+      "access_grants", "covered", "Access grants with workspace-level permissions"),
+    c("CC6.2", "Authentication mechanisms are implemented", "CC6", "Logical Access",
+      "session_monitor", "covered", "Session Monitor tracks authenticated sessions"),
+    c("CC6.3", "Access is restricted to authorized users", "CC6", "Logical Access",
+      "policy_engine", "covered", "Policy engine blocks unauthorized access"),
+    c("CC6.4", "Access to facilities is restricted", "CC6", "Logical Access",
+      "usb_monitor", "partial", "Physical USB monitoring; facility access needs physical controls"),
+    c("CC6.5", "Access is removed when no longer needed", "CC6", "Logical Access",
+      "access_grants", "covered", "Revocation entity tracks access removal"),
+    c("CC6.6", "Logical access security measures restrict access", "CC6", "Logical Access",
+      "enforcement_isolate", "covered", "ISOLATE action restricts network access"),
+    c("CC6.7", "Data transmission is restricted", "CC6", "Logical Access",
+      "network_monitor", "covered", "Network Monitor detects and blocks unauthorized transmission"),
+    c("CC6.8", "Unauthorized access is prevented", "CC6", "Logical Access",
+      "all_monitors", "covered", "Comprehensive monitoring prevents unauthorized access"),
+
+    c("CC7.1", "Detection and monitoring procedures are implemented", "CC7", "System Operations",
+      "all_monitors", "covered", "USB, network, filesystem, and session monitors"),
+    c("CC7.2", "Anomalies are identified and acted upon", "CC7", "System Operations",
+      "risk_engine", "covered", "Risk Engine identifies anomalies and triggers enforcement"),
+    c("CC7.3", "Incident response procedures are implemented", "CC7", "System Operations",
+      "enforcement", "covered", "Automated incident response via FREEZE/ISOLATE/BLOCK"),
+    c("CC7.4", "Incident response is recovery-oriented", "CC7", "System Operations",
+      "forensic_cases", "partial", "Forensic cases capture incident data; recovery automation in Phase 3"),
+    c("CC7.5", "Incident information is communicated", "CC7", "System Operations",
+      "alert_system", "covered", "Alert system with severity classification and REST API"),
+
+    c("CC8.1", "Changes are authorized, designed, and implemented", "CC8", "Change Management",
+      "policy_engine", "partial", "Policy toggle for controlled changes; full change management needs process"),
+    c("CC8.2", "Changes are authorized before deployment", "CC8", "Change Management",
+      "policy_engine", "partial", "Policy versioning; deployment authorization needs CI/CD integration"),
+    c("CC8.3", "Changes are tested and deployed", "CC8", "Change Management",
+      "none", "not_covered", "CI/CD integration planned for Phase 3"),
+
+    c("CC9.1", "Risk mitigation activities are identified", "CC9", "Risk Mitigation",
+      "policy_engine", "covered", "Policies define risk mitigation through automated enforcement"),
+    c("CC9.2", "Vendor and third-party risk is managed", "CC9", "Risk Mitigation",
+      "none", "not_covered", "Third-party risk management planned for Phase 3"),
+]
+
+# === GDPR ===
+GDPR_CONTROLS = [
+    c("Art.5", "Principles relating to processing of personal data", "Chapter II", "Principles",
+      "evidence_vault", "partial", "Data minimization through workspace classification; full DPIA needed"),
+    c("Art.25", "Data protection by design and by default", "Chapter III", "Design",
+      "workspace_isolation", "covered", "Workspace isolation and classification by design"),
+    c("Art.28", "Processor obligations", "Chapter III", "Processor",
+      "access_grants", "partial", "Access control for processors; full DPA management needed"),
+    c("Art.30", "Records of processing activities", "Chapter III", "Records",
+      "event_logging", "covered", "All data processing events logged and sealed"),
+    c("Art.32", "Security of processing", "Chapter III", "Security",
+      "evidence_vault", "covered", "SHA-256 + HMAC + Merkle + Ed25519 encryption chain"),
+    c("Art.33", "Notification to supervisory authority", "Chapter III", "Breach",
+      "breach_notification", "covered", "Automated breach detection and notification engine"),
+    c("Art.34", "Communication to data subjects", "Chapter III", "Breach",
+      "breach_notification", "partial", "Breach detection complete; subject notification needs integration"),
+    c("Art.35", "Data protection impact assessment", "Chapter III", "DPIA",
+      "compliance_mapper", "partial", "Risk assessment engine; formal DPIA template needed"),
+    c("Art.44-49", "Transfers to third countries", "Chapter V", "Transfers",
+      "network_monitor", "covered", "Network Monitor detects external data transfers"),
+]
+
+# === CMMC 2.0 ===
+CMMC_CONTROLS = [
+    c("AC.L1-3.1.1", "Limit system access to authorized users", "AC", "Access Control",
+      "access_grants", "covered", "Access grants with workspace-level permissions"),
+    c("AC.L1-3.1.2", "Limit system access to authorized transactions", "AC", "Access Control",
+      "policy_engine", "covered", "Policy Engine limits access to authorized transactions"),
+    c("AC.L1-3.1.20", "Verify and control external connections", "AC", "Access Control",
+      "network_monitor", "covered", "Network Monitor verifies all external connections"),
+    c("AC.L1-3.1.22", "Control information posted on public websites", "AC", "Access Control",
+      "workspace_classification", "partial", "Workspace classification; public website control needs CMS integration"),
+    c("AU.L1-3.3.1", "Create and retain audit records", "AU", "Audit",
+      "evidence_vault", "covered", "All events retained in immutable Evidence Vault"),
+    c("AU.L1-3.3.2", "Create and retain audit records for review", "AU", "Audit",
+      "forensic_cases", "covered", "Forensic cases aggregate audit records"),
+    c("IA.L1-3.5.1", "Identify system users", "IA", "Identification",
+      "session_monitor", "covered", "Session Monitor identifies all active users"),
+    c("IA.L1-3.5.2", "Authenticate system users", "IA", "Identification",
+      "session_monitor", "covered", "Session authentication tracked"),
+    c("MP.L1-3.8.3", "Sanitize or destroy media", "MP", "Media Protection",
+      "usb_monitor", "partial", "USB monitoring detects media; sanitization needs wipe integration"),
+    c("PE.L1-3.10.1", "Limit physical access to systems", "PE", "Physical",
+      "usb_monitor", "partial", "USB physical access monitoring; facility access needs physical controls"),
+    c("SC.L1-3.13.1", "Monitor and control communications at boundaries", "SC", "System Comms",
+      "network_monitor", "covered", "Network Monitor controls communications at boundaries"),
+    c("SC.L1-3.13.5", "Implement subnetworks for public systems", "SC", "System Comms",
+      "enforcement_isolate", "covered", "ISOLATE creates network segmentation"),
+    c("SI.L1-3.14.1", "Identify and manage flaws timely", "SI", "System Integrity",
+      "filesystem_monitor", "partial", "Filesystem Monitor detects changes; vulnerability management needed"),
+    c("SI.L1-3.14.2", "Malicious code protection", "SI", "System Integrity",
+      "filesystem_monitor", "covered", "Detects ransomware patterns and malicious file operations"),
+    c("SI.L1-3.14.4", "Malicious code protection update mechanism", "SI", "System Integrity",
+      "policy_engine", "covered", "Policy updates deploy protection rules"),
+    c("SI.L1-3.14.5", "Perform periodic scans", "SI", "System Integrity",
+      "all_monitors", "covered", "Continuous scanning via 4 monitors"),
+]
+
+# === PCI DSS 4.0 ===
+PCI_CONTROLS = [
+    c("Req.1", "Install and maintain network security controls", "Network", "Network Security",
+      "network_monitor", "covered", "Network Monitor + ISOLATE provides network security"),
+    c("Req.2", "Apply secure configurations", "Configuration", "System Hardening",
+      "agent_config", "partial", "Agent config management; full hardening needs CIS benchmarks"),
+    c("Req.3", "Protect stored account data", "Data", "Data Protection",
+      "evidence_vault", "partial", "Evidence Vault protects data; PCI-specific encryption for card data needed"),
+    c("Req.4", "Protect cardholder data with strong cryptography during transmission", "Data", "Data Protection",
+      "hmac_verification", "covered", "HMAC-SHA256 protects data in transit"),
+    c("Req.5", "Protect from malicious software", "Software", "Malware",
+      "filesystem_monitor", "covered", "Ransomware pattern detection"),
+    c("Req.6", "Develop and maintain secure systems", "Development", "Secure Development",
+      "evidence_vault", "partial", "Evidence integrity; secure SDLC needs CI/CD integration"),
+    c("Req.7", "Restrict access by business need to know", "Access", "Access Control",
+      "access_grants", "covered", "Workspace-based access with need-to-know classification"),
+    c("Req.8", "Identify users and authenticate access", "Access", "Identity",
+      "session_monitor", "covered", "Session Monitor identifies and authenticates users"),
+    c("Req.9", "Restrict physical access to cardholder data", "Physical", "Physical Access",
+      "usb_monitor", "partial", "USB monitoring; full physical access control needs facilities"),
+    c("Req.10", "Log and monitor all access", "Logging", "Monitoring",
+      "all_monitors", "covered", "4 monitors log all access with immutable evidence"),
+    c("Req.11", "Test security regularly", "Testing", "Security Testing",
+      "compliance_mapper", "partial", "Compliance gap analysis; penetration testing needs external service"),
+    c("Req.12", "Support information security with policies", "Policy", "Security Policy",
+      "policy_engine", "covered", "Declarative YAML policies support information security"),
+]
+
+# === HIPAA ===
+HIPAA_CONTROLS = [
+    c("§164.308(a)(1)", "Security management process", "Administrative", "Security Management",
+      "risk_engine", "covered", "Risk Engine implements security management through risk analysis"),
+    c("§164.308(a)(3)", "Workforce security", "Administrative", "Workforce",
+      "access_grants", "covered", "Access grants enforce workforce security"),
+    c("§164.308(a)(4)", "Information access management", "Administrative", "Access Management",
+      "access_grants", "covered", "Workspace-level access management"),
+    c("§164.308(a)(5)", "Security awareness and training", "Administrative", "Training",
+      "none", "not_covered", "Training management planned for Phase 3"),
+    c("§164.308(a)(6)", "Security incident procedures", "Administrative", "Incident",
+      "enforcement", "covered", "Automated incident detection and response"),
+    c("§164.308(a)(7)", "Contingency plan", "Administrative", "Contingency",
+      "offline_queue", "partial", "Offline queue provides data resilience; full DR plan needed"),
+    c("§164.308(a)(8)", "Evaluation", "Administrative", "Evaluation",
+      "compliance_mapper", "covered", "Automated compliance evaluation"),
+    c("§164.310(a)(1)", "Facility access controls", "Physical", "Facility",
+      "none", "not_applicable", "Physical facility controls outside tool scope"),
+    c("§164.310(d)(1)", "Device and media controls", "Physical", "Device Controls",
+      "usb_monitor", "covered", "USB Monitor tracks device access and controls media"),
+    c("§164.312(a)(1)", "Access control", "Technical", "Access Control",
+      "access_grants", "covered", "Technical access control via access grants and policies"),
+    c("§164.312(b)", "Audit controls", "Technical", "Audit",
+      "evidence_vault", "covered", "Immutable audit trail with Merkle tree and Ed25519"),
+    c("§164.312(c)", "Integrity", "Technical", "Integrity",
+      "evidence_vault", "covered", "SHA-256 + HMAC integrity verification"),
+    c("§164.312(d)", "Authentication", "Technical", "Authentication",
+      "session_monitor", "covered", "Session Monitor tracks user authentication"),
+    c("§164.312(e)(1)", "Transmission security", "Technical", "Transmission",
+      "hmac_verification", "covered", "HMAC-SHA256 protects data in transit"),
+]
+
+
+def get_soc2():
+    return {"name": "SOC 2 Type II", "version": "2017", "description": "SOC 2 Type II Trust Services Criteria",
+            "source": "https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2",
+            "controls": SOC2_CONTROLS}
+
+def get_gdpr():
+    return {"name": "GDPR", "version": "2016/679", "description": "General Data Protection Regulation",
+            "source": "https://gdpr.eu", "controls": GDPR_CONTROLS}
+
+def get_cmmc():
+    return {"name": "CMMC 2.0", "version": "2.0", "description": "Cybersecurity Maturity Model Certification",
+            "source": "https://dodcio.defense.gov/cmmc/", "controls": CMMC_CONTROLS}
+
+def get_pci():
+    return {"name": "PCI DSS 4.0", "version": "4.0", "description": "Payment Card Industry Data Security Standard",
+            "source": "https://www.pcisecuritystandards.org/", "controls": PCI_CONTROLS}
+
+def get_hipaa():
+    return {"name": "HIPAA", "version": "2013", "description": "Health Insurance Portability and Accountability Act",
+            "source": "https://www.hhs.gov/hipaa/index.html", "controls": HIPAA_CONTROLS}
+
+
 def get_all_frameworks():
-    return [get_nist_csf2(), get_iso_27001()]
+    return [get_nist_csf2(), get_iso_27001(), get_soc2(), get_gdpr(), get_cmmc(), get_pci(), get_hipaa()]
 
 
 def get_framework(name):
-    name_lower = name.lower().replace(" ", "").replace("-", "")
+    name_lower = name.lower().replace(" ", "").replace("-", "").replace("_", "").replace(".", "").replace(":", "")
     for fw in get_all_frameworks():
-        fw_key = fw["name"].lower().replace(" ", "").replace("-", "").replace(":", "")
-        if name_lower in fw_key or fw_key in name_lower:
+        fw_key = fw["name"].lower().replace(" ", "").replace("-", "").replace("_", "").replace(".", "").replace(":", "")
+        if name_lower == fw_key or name_lower in fw_key or fw_key in name_lower:
             return fw
     return None
