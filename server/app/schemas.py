@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import ConfigDict,  BaseModel, Field
 from datetime import datetime
 from typing import Optional
 from app.models import SeverityLevel, ActionType, WorkspaceClassification
@@ -48,8 +48,7 @@ class PolicyResponse(BaseModel):
     is_enabled: bool
     priority: int
     created_at: datetime
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class WorkspaceCreate(BaseModel):
@@ -74,8 +73,7 @@ class WorkspaceResponse(BaseModel):
     allow_print: bool
     is_active: bool
     created_at: datetime
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AlertResponse(BaseModel):
@@ -88,5 +86,4 @@ class AlertResponse(BaseModel):
     description: Optional[str]
     action_taken: Optional[str]
     created_at: datetime
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

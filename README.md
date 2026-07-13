@@ -1,415 +1,264 @@
-<p align="center">
-  <img src="https://img.shields.io/badge/version-0.1.0-blue.svg" alt="version">
-  <img src="https://img.shields.io/badge/python-3.12+-green.svg" alt="python">
-  <img src="https://img.shields.io/badge/rust-1.70+-orange.svg" alt="rust">
-  <img src="https://img.shields.io/badge/license-Proprietary-red.svg" alt="license">
-  <img src="https://img.shields.io/badge/tests-94%2F94-brightgreen.svg" alt="tests">
-  <img src="https://img.shields.io/badge/compliance-NIST%20CSF%202.0%20%2B%20ISO%2027001-blueviolet.svg" alt="compliance">
-</p>
-
----
-
 # Hyperium Sovereign-OS
 
-## Sistema de Soberanía Corporativa y Anti-Espionaje
+> Corporate Sovereignty and Anti-Espionage Security Platform
 
-**Sovereign-OS** es una plataforma de contención, detección, evidencia y gobernanza diseñada para proteger los activos más críticos de una corporación: código fuente, propiedad intelectual, secretos industriales y documentos estratégicos.
+[![CI](https://github.com/hyperiumia/hyperium-sovereign-os/actions/workflows/ci.yml/badge.svg)](https://github.com/hyperiumia/hyperium-sovereign-os/actions)
+[![Python](https://img.shields.io/badge/python-3.11%20|%203.12-blue)](https://python.org)
+[![Version](https://img.shields.io/badge/version-1.0.0-green)](https://github.com/hyperiumia/hyperium-sovereign-os/releases/tag/v1.0.0)
 
-No es un firewall. No es un EDR. Es una capa de soberanía que se superpone a la infraestructura existente y garantiza tres cosas:
+Sovereign-OS provides cryptographic evidence integrity, policy-based threat detection,
+multi-framework compliance mapping, and forensic investigation capabilities for
+enterprise security operations.
 
-1. **Aislamiento** — Los datos críticos viven en entornos controlados donde nadie puede moverlos sin autorización explícita.
-2. **Detección** — Cada intento de exfiltración, comportamiento anómalo o manipulación de datos se detecta en tiempo real.
-3. **Evidencia** — Cada evento se firma criptográficamente y se almacena en un Merkle tree inmutable, creando una cadena de custodia con valor legal.
+## Architecture
 
----
++-----------------------------------------------------+
+| REST API (FastAPI) |
+| 30+ endpoints | Auth | Rate Limiting |
++------------+----------+--------+--------------------+
+| Evidence | Policy | Risk | Compliance |
+| Vault | Engine | Engine | Mapper (7 FW) |
++------------+----------+--------+--------------------+
+| Forensic | Breach | SIEM | Reporting |
+| Engine | Notific. | Export | & Dashboard |
++------------+----------+--------+--------------------+
+| Cryptographic Core |
+| SHA-256 | HMAC-SHA256 | Merkle Tree | Ed25519 |
++-----------------------------------------------------+
+| Storage (SQLAlchemy Async) |
+| PostgreSQL / SQLite |
++-----------------------------------------------------+
 
-## Arquitectura
-
-| Pilar | Módulo | Función |
-|---|---|---|
-| **Soberanía del Dato** | Agent + Policy Engine | Control absoluto sobre quién y qué procesos acceden a datos críticos |
-| **Soberanía Operacional** | Monitores + Risk Engine | Blindaje contra exfiltración, insider threat y sabotaje |
-| **Soberanía Probatoria** | Evidence Vault + Merkle Tree | Evidencia inmutable con valor legal para tribunales y reguladores |
-
----
-
-## Componentes
-
-### Servidor (Python 3.12 + FastAPI)
-
-| Componente | Descripción |
-|---|---|
-| **Evidence Vault** | Hash SHA-256, firma HMAC-SHA256, Merkle tree. Epochs firmados con Ed25519. |
-| **Policy Engine** | 10 operadores, wildcards, prioridades, condiciones AND. Carga desde YAML. |
-| **Risk Engine** | Scoring multifactor: volumen, seguridad, horario, workspace, historial. |
-| **Compliance Mapper** | NIST CSF 2.0 (75 controles) + ISO 27001:2022 (40+ controles). Gap analysis y export. |
-| **REST API** | 22+ endpoints: ingesta, verificación, workspaces, alertas, compliance. |
-| **14 Entidades** | User, Device, Session, Workspace, Asset, Policy, Event, Alert, EvidenceItem, ForensicCase, AccessGrant, Revocation, MerkleEpoch. |
-
-### Agent (Rust)
-
-| Monitor | Método | Detecta |
-|---|---|---|
-| **USB** | Polling /sys/bus/usb | Dispositivos USB, clasificación |
-| **Network** | Parsing /proc/net/tcp | Conexiones externas, puertos C2 |
-| **Filesystem** | inotify non-blocking | Creación/eliminación, ransomware, log deletion |
-| **Session** | who + env | Cambios de usuario |
-
-### Enforcement
-
-| Acción | Trigger | Efecto |
-|---|---|---|
-| **FREEZE** | Risk alto, transferencia masiva | Bloqueo de pantalla, kill procesos |
-| **ISOLATE** | Ransomware, borrado de logs | iptables DROP salvo servidor |
-| **BLOCK** | USB en workspace confidencial | Bloqueo de acción específica |
-
-### Resiliencia
-
-| Característica | Implementación |
-|---|---|
-| **Cola offline** | JSONL local. Se envían al reconectar. |
-| **Retry backoff** | Exponencial hasta 30s. |
-| **Batch sending** | Hasta 50 eventos por request. |
-| **Health checks** | Cada 30s. |
-
----
-
-## Criptografía
-
-Cada evento que llega al servidor:
-
-1. Se **hashea** con SHA-256 (hash canónico del payload JSON).
-2. Se **verifica** el HMAC-SHA256 enviado por el agent (autenticidad).
-3. Se **agrega** como hoja del Merkle tree del epoch actual.
-4. Cada 100 eventos, el epoch se **cierra**: raíz Merkle firmada con Ed25519.
-5. La raíz firmada es un checkpoint inmutable: cualquier manipulación es detectable.
-
----
-
-## Compliance Mapper
-
-Motor de compliance que mapea automáticamente la cobertura de controles contra frameworks regulatorios internacionales.
-
-### Frameworks soportados
-
-| Framework | Controles | Score | Estado |
-|---|---|---|---|
-| **NIST CSF 2.0** | 75 controles (6 funciones) | >40% | Operacional |
-| **ISO 27001:2022** | 40+ controles (4 temas) | >30% | Operacional |
-
-### NIST CSF 2.0 — Funciones cubiertas
-
-| Función | Descripción | Componente |
-|---|---|---|
-| **Govern (GV)** | Gobernanza y estrategia | Workspace classification, Policy Engine, Risk Engine |
-| **Identify (ID)** | Activos y riesgos | Device Monitor, Risk Engine |
-| **Protect (PR)** | Protección de datos | Evidence Vault, Session Monitor, Access Grants |
-| **Detect (DE)** | Monitoreo continuo | 4 monitores, Risk Engine, Alert System |
-| **Respond (RS)** | Respuesta a incidentes | Enforcement (FREEZE/ISOLATE/BLOCK) |
-| **Recover (RC)** | Recuperación | Planeado para Fase 3 |
-
-### ISO 27001:2022 — Temas cubiertos
-
-| Tema | Controles | Estado |
-|---|---|---|
-| **A.5 Organizational** | 24 controles | Mayoría cubiertos |
-| **A.6 People** | 4 controles | Parcial |
-| **A.7 Physical** | 3 controles | USB cubre A.7.10 |
-| **A.8 Technological** | 16 controles | Mayoría cubiertos |
-
-### Capacidades
-
-- **Gap Analysis** — Controles no cubiertos, priorizado HIGH/MEDIUM
-- **Scoring** — Por función y global
-- **Evidence Package** — Exportable para auditores
-- **HTML Export** — Reporte visual descargable
-
-### Endpoints de compliance
-
-```
-curl http://localhost:8000/api/v1/compliance/summary
-curl http://localhost:8000/api/v1/compliance/frameworks
-curl http://localhost:8000/api/v1/compliance/report/nist-csf-2.0
-curl http://localhost:8000/api/v1/compliance/gaps/iso-27001
-curl http://localhost:8000/api/v1/compliance/evidence/nist-csf-2.0
-curl http://localhost:8000/api/v1/compliance/export/nist-csf-2.0?format=html > report.html
-```
-
-### Próximos frameworks
-
-| Prioridad | Framework | Región |
-|---|---|---|
-| 1 | SOC 2 Type II | USA |
-| 2 | GDPR | Unión Europea |
-| 3 | CMMC 2.0 | USA DoD |
-| 4 | PCI DSS 4.0 | Global |
-| 5 | HIPAA | USA Salud |
-| 6 | LGPD | Brasil |
-| 7 | NIS2 | UE |
-| 8 | DORA | UE Finanzas |
-
----
-
-## Políticas
-
-### Operadores soportados
-
-| Operador | Descripción |
-|---|---|
-| `eq` / `neq` | Igualdad / Desigualdad |
-| `gt` / `gte` / `lt` / `lte` | Comparaciones numéricas |
-| `contains` | Substring |
-| `in` | Membership en lista |
-| `matches` | Regex |
-
-### Políticas por defecto
-
-| Política | Trigger | Acción | Prioridad |
-|---|---|---|---|
-| isolate-ransomware-signal | `filesystem.mass_encrypt` | ISOLATE | 0 |
-| isolate-log-deletion | `filesystem.log_deletion_attempt` | ISOLATE | 0 |
-| freeze-high-risk-session | risk >= 0.85 | FREEZE | 1 |
-| block-airgap-network | network.* (air-gapped) | BLOCK | 2 |
-| freeze-large-transfer | session.data_volume > 500MB | ALERT_AND_FREEZE | 5 |
-| block-usb-confidential | usb.* (confidencial) | BLOCK | 10 |
-| alert-usb-any-workspace | usb.* | LOG | 200 |
-
----
+text
 
 ## Quick Start
 
-### Requisitos
-
-- Python 3.12+
-- Rust 1.70+ (solo para compilar el agent)
-- Linux (el agent usa /proc, /sys e inotify)
-
-### Servidor
+### Docker (recommended)
 
 ```bash
 git clone https://github.com/hyperiumia/hyperium-sovereign-os.git
-cd hyperium-sovereign-os/server
-pip install -r requirements.txt
-uvicorn app.main:app --port 8000
-curl http://localhost:8000/health
-```
-
-### Agent
-
-```bash
-cd hyperium-sovereign-os/agent
-cargo build --release
-RUST_LOG=info ./target/release/sovereign-agent
-```
-
-### Compliance
-
-```bash
-curl http://localhost:8000/api/v1/compliance/summary
-curl http://localhost:8000/api/v1/compliance/export/nist-csf-2.0?format=html > nist-report.html
-```
-
-### Demo de ataque
-
-```bash
-cd hyperium-sovereign-os/server
-python scripts/demo_attack.py
-```
-
----
-
-## Tests
-
-```bash
-cd hyperium-sovereign-os/server
-python -m pytest tests/ -v
-```
-
-**94 tests** passing:
-
-| Suite | Tests | Cobertura |
-|---|---|---|
-| test_crypto.py | 18 | SHA-256, HMAC, Merkle tree, Ed25519 |
-| test_policy_engine.py | 18 | 10 operadores, wildcards, condiciones, prioridades |
-| test_evidence_vault.py | 9 | Ingesta, rechazo de manipulación, epochs, verificación |
-| test_api.py | 16 | Health, CRUD, ingesta, batch, verificación, alertas |
-| test_risk_engine.py | 4 | Scoring, volumen, historial, bounds |
-| test_compliance.py | 20 | NIST CSF 2.0, ISO 27001, engine, gaps, evidence, export |
-
----
-
-## Demos interactivas
-
-| Demo | Descripción |
-|---|---|
-| [Landing Page](https://htmlpreview.github.io/?https://github.com/hyperiumia/hyperium-sovereign-os/blob/main/docs/demo-1-landing.html) | Product page con tríada de soberanía y features |
-| [Security Dashboard](https://htmlpreview.github.io/?https://github.com/hyperiumia/hyperium-sovereign-os/blob/main/docs/demo-2-dashboard.html) | SOC con event feed en vivo, monitores, risk gauge |
-| [Evidence Vault](https://htmlpreview.github.io/?https://github.com/hyperiumia/hyperium-sovereign-os/blob/main/docs/demo-3-evidence.html) | Merkle tree visual, verificación interactiva |
-| [Policy Engine](https://htmlpreview.github.io/?https://github.com/hyperiumia/hyperium-sovereign-os/blob/main/docs/demo-4-policy.html) | 7 políticas expandibles, 10 operadores, test console |
-| [Attack Simulation](https://htmlpreview.github.io/?https://github.com/hyperiumia/hyperium-sovereign-os/blob/main/docs/demo-5-attack.html) | Timeline de insider threat con detección y respuesta |
-
----
-
-## API Reference
-
-### Events
-
-| Método | Endpoint | Descripción |
-|---|---|---|
-| POST | `/api/v1/events/ingest` | Ingesta individual |
-| POST | `/api/v1/events/ingest/batch` | Ingesta en lote |
-
-### Evidence
-
-| Método | Endpoint | Descripción |
-|---|---|---|
-| GET | `/api/v1/evidence/verify/{id}` | Verificar integridad |
-| GET | `/api/v1/evidence/epoch/{n}` | Datos de epoch Merkle |
-| GET | `/api/v1/evidence/epoch/{n}/verify` | Verificar firma de epoch |
-| GET | `/api/v1/evidence/stats` | Estadísticas del Vault |
-
-### Workspaces
-
-| Método | Endpoint | Descripción |
-|---|---|---|
-| GET | `/api/v1/workspaces/` | Listar workspaces |
-| POST | `/api/v1/workspaces/` | Crear workspace |
-| POST | `/api/v1/workspaces/{id}/grant` | Otorgar acceso |
-| POST | `/api/v1/workspaces/{id}/revoke/{gid}` | Revocar acceso |
-
-### Policies
-
-| Método | Endpoint | Descripción |
-|---|---|---|
-| GET | `/api/v1/policies/` | Listar políticas |
-| POST | `/api/v1/policies/` | Crear política |
-| PUT | `/api/v1/policies/{id}/toggle` | Activar/desactivar |
-
-### Alerts
-
-| Método | Endpoint | Descripción |
-|---|---|---|
-| GET | `/api/v1/alerts/` | Listar alertas |
-| PUT | `/api/v1/alerts/{id}/resolve` | Resolver alerta |
-
-### Compliance
-
-| Método | Endpoint | Descripción |
-|---|---|---|
-| GET | `/api/v1/compliance/summary` | Resumen general |
-| GET | `/api/v1/compliance/frameworks` | Frameworks disponibles |
-| GET | `/api/v1/compliance/report/{fw}` | Reporte completo |
-| GET | `/api/v1/compliance/gaps/{fw}` | Gaps priorizados |
-| GET | `/api/v1/compliance/controls/{fw}` | Todos los controles |
-| GET | `/api/v1/compliance/evidence/{fw}` | Paquete para auditores |
-| GET | `/api/v1/compliance/export/{fw}` | Export HTML/JSON |
-
-### System
-
-| Método | Endpoint | Descripción |
-|---|---|---|
-| GET | `/health` | Health check |
-| GET | `/` | Info del sistema |
-| GET | `/docs` | Swagger UI |
-
----
-
-## Deployment
-
-### Docker
-
-```bash
 cd hyperium-sovereign-os
 docker-compose up -d
-```
 
-### systemd (Agent)
+## Quick Start
+
+### Docker (recommended)
 
 ```bash
+git clone https://github.com/hyperiumia/hyperium-sovereign-os.git
+cd hyperium-sovereign-os
+docker-compose up -d
+
+API at http://localhost:8000. Dashboard at http://localhost:8000/dashboard.
+
+
+Local
+
+bash
+cd server
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+cd server
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+
+Features
+
+Evidence Vault
+Cryptographic evidence integrity with tamper detection.
+
+
+Component	Algorithm	Purpose
+Event Hashing	SHA-256	Key-order independent content hashing
+Integrity	HMAC-SHA256	Signed event verification
+Chain	Merkle Tree	Append-only proof generation
+Epochs	Ed25519	Signed epoch boundaries
+
+Policy Engine
+10 comparison operators with wildcard trigger matching and YAML import.
+Operators: eq, neq, gt, gte, lt, lte, contains, in_list, in_csv, matches_regex
+
+
+Risk Engine
+Multifactor scoring (0.0 - 1.0) based on event volume, user history, and session behavior.
+
+
+Compliance Mapper
+7 frameworks with gap analysis, priority ranking, and evidence package generation.
+
+
+Framework	Controls	Coverage
+NIST CSF 2.0	106	Govern, Identify, Protect, Detect, Respond, Recover
+ISO 27001:2022	93	Organizational, People, Physical, Technological
+SOC 2 Type II	56	Security, Availability, Processing Integrity
+GDPR	15	Data Protection, Privacy Rights
+CMMC 2.0	17	Access Control, Audit, Incident Response
+PCI DSS 4.0	12	Network, Configuration, Data Protection
+HIPAA	18	Administrative, Physical, Technical
+
+Forensic Engine
+Chronological timeline construction with phase classification
+Taint analysis for data flow tracking
+Evidence packaging (JSON / ZIP export)
+Document watermarking with HMAC signatures
+SIEM export formats: JSON, CEF, LEEF, Syslog
+
+Breach Notification
+RFC 3161 trusted timestamps with 72-hour SLA tracking and notification templates.
+
+
+Auth and Security
+API key authentication with Bearer token support
+Sliding window rate limiting (configurable RPM)
+HMAC event integrity verification
+Tamper detection on all evidence events
+
+API Documentation
+
+Interactive API docs at http://localhost:8000/docs (Swagger UI).
+
+
+Key Endpoints
+
+Method	Path	Description
+GET	/health	Health check with dependency status
+GET	/metrics	Platform metrics (JSON)
+GET	/dashboard	SOC Dashboard
+POST	/api/v1/events	Ingest security event
+POST	/api/v1/events/batch	Batch event ingestion
+GET	/api/v1/evidence/verify/{event_id}	Verify event integrity
+GET	/api/v1/evidence/stats	Evidence vault statistics
+GET	/api/v1/compliance/summary	All frameworks summary
+GET	/api/v1/compliance/evaluate/{fw}	Evaluate specific framework
+GET	/api/v1/compliance/gaps/{fw}	Gap analysis
+GET	/api/v1/reports/executive	Executive HTML report
+GET	/api/v1/reports/compliance/{fw}	Framework HTML report
+GET	/api/v1/forensics/timeline	Forensic timeline
+GET	/api/v1/forensics/taint	Taint analysis
+POST	/api/v1/forensics/watermark	Generate document watermark
+GET	/api/v1/forensics/siem/formats	Available SIEM formats
+GET	/api/v1/auth/status	Authentication status
+POST	/api/v1/auth/keys	Create API key
+GET	/api/v1/alerts	List security alerts
+
+Configuration
+
+Environment variables (.env file or system):
+
+
+Variable	Default	Description
+SOVEREIGN_AUTH_ENABLED	false	Enable API key authentication
+SOVEREIGN_RATE_LIMIT	0	Requests per minute per IP (0=disabled)
+SOVEREIGN_LOG_LEVEL	INFO	Logging level
+SOVEREIGN_LOG_FILE	(empty)	Log file path (empty=stdout only)
+
+Security
+
+Cryptographic Stack
+SHA-256: Deterministic, key-order independent event hashing
+HMAC-SHA256: Symmetric integrity verification with shared secret
+Merkle Tree: Append-only hash tree with proof generation and verification
+Ed25519: Asymmetric epoch signing for non-repudiation
+RFC 3161: Trusted timestamp authority for legal-grade evidence
+
+Threat Model
+Sovereign-OS assumes the internal network may be compromised. All events are
+cryptographically signed and verified independently. Evidence integrity does not
+depend on network security or operator trust.
+
+
+Testing
+
+bash
+cd server
+pip install -r requirements.txt
+python -m pytest tests/ -v --cov=app --cov-report=term-missing
+cd server
+pip install -r requirements.txt
+python -m pytest tests/ -v --cov=app --cov-report=term-missing
+
+128 tests with 74% code coverage covering crypto, policy engine, risk engine,
+compliance mapper, evidence vault, forensics, auth, reporting, rate limiting,
+and metrics.
+
+
+Suite	Tests	Coverage
+test_crypto.py	18	SHA-256, HMAC, Merkle tree, Ed25519
+test_policy_engine.py	18	10 operators, wildcards, conditions, priorities
+test_evidence_vault.py	9	Ingestion, tamper rejection, epochs, verification
+test_api.py	16	Health, CRUD, ingestion, batch, verification, alerts
+test_risk_engine.py	4	Scoring, volume, history, bounds
+test_compliance.py	20	7 frameworks, engine, gaps, evidence, export
+test_auth.py	11	API keys, middleware, Bearer, exempt paths
+test_reports.py	10	Executive report, framework reports, HTML generation
+test_forensics.py	10	Watermark, timeline, taint, SIEM, packaging
+test_breach.py	5	Breach evaluation, notification engine, RFC 3161
+test_rate_limiter.py	4	Disabled, enabled, 429, exempt paths
+test_metrics.py	7	Platform, version, uptime, config, vault, policies
+
+Deployment
+
+Production Checklist
+1.Set SOVEREIGN_AUTH_ENABLED=true and generate API keys
+2.Set SOVEREIGN_RATE_LIMIT=120 (or appropriate value)
+3.Configure SOVEREIGN_LOG_FILE for persistent logging
+4.Use PostgreSQL instead of SQLite for the database
+5.Deploy behind a TLS-terminating reverse proxy (nginx, Caddy)
+6.Set up monitoring on /health and /metrics endpoints
+
+Docker Production
+bash
+docker-compose up -d
+docker-compose up -d
+
+systemd (Agent)
+bash
 sudo cp agent/target/release/sovereign-agent /usr/local/bin/
 sudo cp agent/config/agent.toml /etc/sovereign-agent/
 sudo cp agent/systemd/sovereign-agent.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable sovereign-agent
 sudo systemctl start sovereign-agent
-```
+sudo cp agent/target/release/sovereign-agent /usr/local/bin/
+sudo cp agent/config/agent.toml /etc/sovereign-agent/
+sudo cp agent/systemd/sovereign-agent.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable sovereign-agent
+sudo systemctl start sovereign-agent
 
----
+Demo
 
-## Modelo de amenaza
+bash
+cd server
+python scripts/demo_attack.py
+cd server
+python scripts/demo_attack.py
 
-| Actor | Objetivo | Defensa |
-|---|---|---|
-| **Insider malicioso** | Exfiltrar IP | USB blocking, risk scoring |
-| **Insider negligente** | Data leak accidental | Políticas automáticas, alertas |
-| **Atacante externo** | Robar código, borrar logs | Aislamiento forense, sellado |
-| **Competencia** | Espionaje corporativo | Watermarking, air-gapped |
-| **Ransomware** | Cifrar evidencia | Detección de patrones, aislamiento |
+Roadmap
 
----
+All phases complete as of v1.0.0:
 
-## Roadmap
 
-### Fase 1 — MVP Operacional (Actual)
+Phase 1 - MVP: Evidence Vault, Policy Engine, Risk Engine, REST API
+Phase 2 - Forensics: Watermarking, Taint Analysis, Timeline, Packaging
+Phase 3 - Compliance: RFC 3161, SIEM Export, 7 Regulatory Frameworks
+v1.0.0 - Production: Auth, Rate Limiting, Dashboard, Reports, Docker, CI/CD
 
-- [x] Servidor con 14 entidades y 22+ endpoints
-- [x] Evidence Vault con Merkle tree y Ed25519
-- [x] Policy Engine declarativo con YAML
-- [x] Risk Engine multifactor
-- [x] Agent Rust con 4 monitores
-- [x] Cola offline persistente
-- [x] Enforcement local (freeze, isolate)
-- [x] Compliance Mapper (NIST CSF 2.0 + ISO 27001:2022)
-- [x] 94 tests passing
-- [x] 5 demos HTML interactivas
-- [x] Demo E2E de ataque
+License
 
-### Fase 2 — Observabilidad y Compliance avanzado
+Proprietary - Hyperium IA. All rights reserved.
 
-- [ ] Watermarking criptográfico
-- [ ] Taint analysis corporativa
-- [ ] Timeline forense visual
-- [ ] Exportación de paquete forense
-- [ ] SOC 2 Type II mappings
-- [ ] GDPR/LGPD breach notification
 
-### Fase 3 — DFIR y certificación
+Contact: 
+security@hyperiumia.com
 
-- [ ] Sellado RFC 3161
-- [ ] Integración SIEM/EDR
-- [ ] CMMC 2.0 compliance
-- [ ] PCI DSS 4.0 + HIPAA
-- [ ] Reportes ejecutivos
-- [ ] Compliance dashboard visual
 
----
 
-## Stack tecnológico
+Developed by Hyperium IA - Applied AI for Corporate Cybersecurity.
 
-| Capa | Tecnología | Razón |
-|---|---|---|
-| **Servidor** | Python 3.12 + FastAPI | Async, ecosistema maduro |
-| **Base de datos** | SQLAlchemy + SQLite/PostgreSQL | ORM robusto |
-| **Criptografía** | hashlib + cryptography (Ed25519) | Estándares NIST |
-| **Agent** | Rust + Tokio | Performance, sin dependencias |
-| **Filesystem** | inotify non-blocking | Detección en tiempo real |
-| **Compliance** | Custom engine (YAML) | NIST CSF 2.0 + ISO 27001 |
-| **Despliegue** | Docker + systemd | On-premise |
 
----
+Hyperium Sovereign-OS - Operational Corporate Sovereignty.
 
-## Licencia
 
-Propiedad de **Hyperium IA**. Todos los derechos reservados.
+www.hyperiumia.com
 
-Contacto: security@hyperiumia.com
-
----
-
-Desarrollado por [Hyperium IA](https://www.hyperiumia.com) — Inteligencia Artificial aplicada a ciberseguridad corporativa.
-
-<p align="center">
-  <strong>Hyperium Sovereign-OS</strong><br>
-  Soberanía corporativa operable.<br>
-  <a href="https://www.hyperiumia.com">www.hyperiumia.com</a>
-</p>
