@@ -5,7 +5,7 @@ import os
 
 class Settings(BaseSettings):
     APP_NAME: str = "Hyperium Sovereign-OS"
-    VERSION: str = "0.1.0"
+    VERSION: str = "1.0.0"
     DEBUG: bool = False
     DATABASE_URL: str = "sqlite+aiosqlite:///./sovereign_os.db"
     KEYS_DIR: Path = Path("./app/keys")

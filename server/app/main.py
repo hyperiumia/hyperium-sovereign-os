@@ -17,6 +17,8 @@ from app.forensics.router import router as forensics_router
 from app.auth.middleware import APIKeyMiddleware
 from app.auth.router import router as auth_router
 from app.reporting.router import router as reporting_router
+from app.middleware.rate_limiter import RateLimiter
+from app.api.metrics import router as metrics_router
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 import os
@@ -45,6 +47,7 @@ app = FastAPI(
     description="Sistema de Soberania Corporativa y Anti-Espionaje", lifespan=lifespan,
 )
 app.add_middleware(APIKeyMiddleware)
+app.add_middleware(RateLimiter)
 app.include_router(events.router)
 app.include_router(policies.router)
 app.include_router(evidence.router)
@@ -55,6 +58,7 @@ app.include_router(alerts.router)
 app.include_router(workspaces.router)
 app.include_router(auth_router)
 app.include_router(reporting_router)
+app.include_router(metrics_router)
 
 
 @app.get("/health")
