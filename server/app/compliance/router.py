@@ -61,7 +61,7 @@ async def get_evidence_package(framework_name: str):
 
 
 @router.get("/export/{framework_name}")
-async def export_report(framework_name: str, format: str = Query("json", regex="^(json|html)$")):
+async def export_report(framework_name: str, format: str = Query("json", pattern="^(json|html)$")):
     logger.info("compliance.export.requested", framework=framework_name, format=format)
     report = ComplianceEngine.evaluate_framework(framework_name)
     if not report:
