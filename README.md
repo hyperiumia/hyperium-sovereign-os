@@ -312,7 +312,7 @@ Sovereign-OS asume que **la red ya puede estar comprometida**:
 
 Propiedad de **Hyperium IA**. Todos los derechos reservados.
 
-Contacto: security@hyperiumia.com
+Contacto: hyperiumia@protonmail.com
 
 ---
 
