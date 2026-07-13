@@ -44,6 +44,7 @@ app = FastAPI(
     title=settings.APP_NAME, version=settings.VERSION,
     description="Sistema de Soberania Corporativa y Anti-Espionaje", lifespan=lifespan,
 )
+app.add_middleware(APIKeyMiddleware)
 app.include_router(events.router)
 app.include_router(policies.router)
 app.include_router(evidence.router)
@@ -52,6 +53,8 @@ app.include_router(breach_router, prefix="/api/v1/compliance", tags=["compliance
 app.include_router(forensics_router, prefix="/api/v1/forensics", tags=["forensics"])
 app.include_router(alerts.router)
 app.include_router(workspaces.router)
+app.include_router(auth_router)
+app.include_router(reporting_router)
 
 
 @app.get("/health")

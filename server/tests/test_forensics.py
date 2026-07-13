@@ -55,6 +55,6 @@ class TestSIEM:
             assert "mime" in f
 
 class TestPackage:
-    def test_package_endpoint(self):
-        r = client.post("/api/v1/forensics/package", json={"case_id": "C001", "events": []})
-        assert r.status_code in (200, 201, 400, 422)
+    def test_package_get(self):
+        r = client.get("/api/v1/forensics/package/test-case-001")
+        assert r.status_code in (200, 404)

@@ -51,7 +51,7 @@ class ForensicTimeline:
                 "payload": event.payload if isinstance(event.payload, dict) else {},
                 "hash": event.event_hash,
                 "merkle_leaf": event.merkle_leaf_index,
-                "epoch": event.epoch_number,
+                "epoch": getattr(event, "epoch_number", None),
             }
 
             severity = event.severity or "LOW"

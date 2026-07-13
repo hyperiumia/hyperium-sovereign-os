@@ -17,12 +17,15 @@ class TestBreachNotification:
         from app.compliance.breach_notification import BreachNotificationEngine
         engine = BreachNotificationEngine()
         assert engine is not None
-    def test_has_templates(self):
+    def test_has_methods(self):
         from app.compliance.breach_notification import BreachNotificationEngine
         engine = BreachNotificationEngine()
-        assert any(hasattr(engine, a) for a in ["templates", "get_template", "render_notification", "notification_templates"])
+        assert callable(getattr(engine, "evaluate_breach", None))
 
 class TestRFC3161:
     def test_import(self):
-        from app.compliance.rfc3161 import TrustedTimestamp
-        assert TrustedTimestamp is not None
+        from app.compliance.rfc3161 import TimestampAuthority
+        assert TimestampAuthority is not None
+    def test_instance(self):
+        from app.compliance.rfc3161 import timestamp_authority
+        assert timestamp_authority is not None

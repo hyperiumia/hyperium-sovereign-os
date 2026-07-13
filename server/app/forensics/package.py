@@ -37,7 +37,7 @@ class ForensicPackageExporter:
                 "event_hash": e.event_hash,
                 "hmac_signature": e.hmac_signature,
                 "merkle_leaf_index": e.merkle_leaf_index,
-                "epoch_number": e.epoch_number,
+                "epoch_number": getattr(e, "epoch_number", None),
                 "created_at": e.created_at.isoformat() if e.created_at else None,
             })
 

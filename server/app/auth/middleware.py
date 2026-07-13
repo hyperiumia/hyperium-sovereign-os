@@ -7,7 +7,7 @@ from starlette.responses import JSONResponse
 
 CONFIG_DIR = Path(__file__).parent.parent.parent / "config"
 KEYS_FILE = CONFIG_DIR / "api_keys.json"
-EXEMPT = ["/", "/health", "/docs", "/openapi.json", "/redoc", "/dashboard", "/static", "/api/v1/auth/status"]
+EXEMPT_PREFIX = ["/health", "/docs", "/openapi.json", "/redoc", "/dashboard", "/static", "/api/v1/auth/status"]
 
 def _load():
     if not KEYS_FILE.exists():
@@ -55,7 +55,7 @@ class APIKeyMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         if not is_auth_enabled():
             return await call_next(request)
-        if any(request.url.path.startswith(p) for p in EXEMPT):
+        if request.url.path == "/" or any(request.url.path.startswith(p) for p in EXEMPT_PREFIX):
             return await call_next(request)
         key = request.headers.get("X-API-Key", "")
         if not key:
@@ -63,7 +63,7 @@ class APIKeyMiddleware(BaseHTTPMiddleware):
             if ah.startswith("Bearer "):
                 key = ah[7:]
         if not key:
-            return JSONResponse(401, content={"detail": "Missing API key"})
+            return JSONResponse(status_code=401, content={"detail": "Missing API key"})
         if key not in {k["key"] for k in get_api_keys()}:
-            return JSONResponse(403, content={"detail": "Invalid API key"})
+            return JSONResponse(status_code=403, content={"detail": "Invalid API key"})
         return await call_next(request)
