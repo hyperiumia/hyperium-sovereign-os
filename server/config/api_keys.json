@@ -146,6 +146,27 @@
       "name": "bearer",
       "created_at": "2026-07-13T22:28:32.377178+00:00",
       "active": true
+    },
+    {
+      "id": "key_aff17a39eaf479fe",
+      "key": "sk_sov_S4cg1PnpbQJAnddukhpZXjPPDmjnzZ_9UqXrM9serWg",
+      "name": "test",
+      "created_at": "2026-07-13T22:47:06.764467+00:00",
+      "active": false
+    },
+    {
+      "id": "key_bffc3860dd6e4039",
+      "key": "sk_sov_btwaP1by5uzZM6gE4-_wGCbTBePgIHoCyrabX0po4tc",
+      "name": "mw-test",
+      "created_at": "2026-07-13T22:47:06.795490+00:00",
+      "active": true
+    },
+    {
+      "id": "key_8f91caa81dee7c96",
+      "key": "sk_sov_JbqrTcc80MZnqbZTFTJvZ5S8fEQdvXc9Oou-LZd3Iyo",
+      "name": "bearer",
+      "created_at": "2026-07-13T22:47:06.826295+00:00",
+      "active": true
     }
   ]
 }

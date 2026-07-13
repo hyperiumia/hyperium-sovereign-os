@@ -1,0 +1,26 @@
+services:
+  sovereign-os:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: sovereign-os
+    ports:
+      - "8000:8000"
+    environment:
+      - SOVEREIGN_AUTH_ENABLED=false
+      - SOVEREIGN_RATE_LIMIT=120
+      - SOVEREIGN_LOG_LEVEL=INFO
+    volumes:
+      - sovereign_data:/app/data
+      - sovereign_config:/app/config
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  sovereign_data:
+  sovereign_config:
