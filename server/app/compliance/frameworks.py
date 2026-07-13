@@ -356,6 +356,10 @@ ISO_27001_CONTROLS = [
       "policy_engine", "partial", "Policy toggle for controlled changes; full change management needs process"),
 
 
+]
+
+# === Helper Functions ===
+
 def get_nist_csf2():
     return {
         "name": "NIST CSF 2.0",

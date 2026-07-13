@@ -11,6 +11,7 @@ from app.core.evidence_vault import evidence_vault
 from app.core.policy_engine import policy_engine
 from app.core.crypto import key_manager
 from app.api import events, policies, evidence, alerts, workspaces
+from app.compliance.router import router as compliance_router
 
 logger = structlog.get_logger(__name__)
 START_TIME = time.time()
@@ -38,6 +39,7 @@ app = FastAPI(
 app.include_router(events.router)
 app.include_router(policies.router)
 app.include_router(evidence.router)
+app.include_router(compliance_router, prefix="/api/v1/compliance", tags=["compliance"])
 app.include_router(alerts.router)
 app.include_router(workspaces.router)
 
