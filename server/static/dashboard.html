@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SOVEREIGN-OS | SOC Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#050508;--s1:#0a0a12;--s2:#0f0f1a;--s3:#141420;--b:#1a1a2e;--bl:#252540;--a:#00e87b;--ad:#00e87b33;--bl2:#4488ff;--bd:#4488ff33;--w:#f59e0b;--d:#ef4444;--t:#e0e0e8;--t2:#888898;--tm:#505068;--sw:220px;--hh:56px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--t);font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.5;overflow-x:hidden}
+.sb{position:fixed;top:0;left:0;width:var(--sw);height:100vh;background:var(--s1);border-right:1px solid var(--b);display:flex;flex-direction:column;z-index:100}
+.sb-b{padding:20px;border-bottom:1px solid var(--b)}
+.sb-b h1{font-family:'Orbitron',sans-serif;font-size:14px;letter-spacing:3px;color:var(--a)}
+.sb-b .v{font-size:10px;color:var(--tm);margin-top:4px}
+.sb-n{flex:1;padding:16px 0}
+.ni{display:flex;align-items:center;gap:12px;padding:12px 20px;color:var(--t2);font-size:12px;letter-spacing:.5px;cursor:pointer;border-left:2px solid transparent;transition:all .2s}
+.ni:hover{background:var(--s2);color:var(--t)}
+.ni.ac{color:var(--a);border-left-color:var(--a);background:var(--ad)}
+.ni .ic{font-size:16px;width:20px;text-align:center}
+.hd{position:fixed;top:0;left:var(--sw);right:0;height:var(--hh);background:var(--s1);border-bottom:1px solid var(--b);display:flex;align-items:center;justify-content:space-between;padding:0 24px;z-index:99}
+.hd-t{font-family:'Orbitron',sans-serif;font-size:12px;letter-spacing:2px;color:var(--t2)}
+.hd-s{display:flex;align-items:center;gap:16px;font-size:11px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--a);animation:pulse 2s infinite}
+.dot.off{background:var(--d);animation:none}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 var(--ad)}50%{opacity:.8;box-shadow:0 0 0 6px transparent}}
+.mn{margin-left:var(--sw);margin-top:var(--hh);padding:24px;min-height:calc(100vh - var(--hh))}
+.kr{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.kc{background:var(--s1);border:1px solid var(--b);border-radius:8px;padding:20px;position:relative;overflow:hidden;transition:border-color .3s}
+.kc:hover{border-color:var(--bl)}
+.kc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kc.g::before{background:var(--a)}.kc.b::before{background:var(--bl2)}.kc.y::before{background:var(--w)}.kc.r::before{background:var(--d)}
+.kl{font-size:10px;color:var(--tm);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px}
+.kv{font-family:'Orbitron',sans-serif;font-size:28px;font-weight:700}
+.kc.g .kv{color:var(--a)}.kc.b .kv{color:var(--bl2)}.kc.y .kv{color:var(--w)}.kc.r .kv{color:var(--d)}
+.ks{font-size:11px;color:var(--t2);margin-top:4px}
+.cr{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:24px}
+.cp{background:var(--s1);border:1px solid var(--b);border-radius:8px;padding:20px}
+.ct{font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:1.5px;color:var(--t2);text-transform:uppercase;margin-bottom:16px}
+.tp{background:var(--s1);border:1px solid var(--b);border-radius:8px;padding:20px;margin-bottom:24px;overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{font-size:10px;color:var(--tm);text-transform:uppercase;letter-spacing:1.5px;padding:10px 12px;text-align:left;border-bottom:1px solid var(--b)}
+td{padding:10px 12px;font-size:12px;border-bottom:1px solid var(--b)}
+tr:hover td{background:var(--s2)}
+.bg{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.bg-critical{background:#ef444422;color:#ef4444;border:1px solid #ef444444}
+.bg-high{background:#f9731622;color:#f97316;border:1px solid #f9731644}
+.bg-medium{background:#f59e0b22;color:#f59e0b;border:1px solid #f59e0b44}
+.bg-low{background:#22c55e22;color:#22c55e;border:1px solid #22c55e44}
+.tl{position:relative;padding-left:24px}
+.tl::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:1px;background:var(--b)}
+.ti{position:relative;padding:12px 0;padding-left:24px}
+.ti::before{content:'';position:absolute;left:-20px;top:18px;width:8px;height:8px;border-radius:50%;background:var(--a);border:2px solid var(--bg)}
+.tt{font-size:10px;color:var(--tm);margin-bottom:4px}
+.tc2{font-size:12px;color:var(--t)}
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:200}
+.mo.sh{display:flex}
+.md{background:var(--s2);border:1px solid var(--b);border-radius:12px;padding:32px;width:400px;max-width:90vw}
+.md h2{font-family:'Orbitron',sans-serif;font-size:14px;letter-spacing:2px;color:var(--t);margin-bottom:16px}
+.md input{width:100%;background:var(--s1);border:1px solid var(--b);border-radius:6px;padding:10px 14px;color:var(--t);font-family:'JetBrains Mono',monospace;font-size:12px;margin-bottom:16px;outline:none}
+.md input:focus{border-color:var(--a)}
+.ma{display:flex;gap:8px;justify-content:flex-end}
+.btn{padding:8px 16px;border-radius:6px;border:1px solid var(--b);background:var(--s1);color:var(--t);font-family:'JetBrains Mono',monospace;font-size:11px;cursor:pointer;transition:all .2s}
+.btn:hover{background:var(--s2)}
+.bp{background:var(--a);color:#000;border-color:var(--a);font-weight:600}
+.bp:hover{background:#00c060}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--s2);border:1px solid var(--b);border-radius:8px;padding:12px 20px;font-size:12px;z-index:300;transform:translateY(100px);opacity:0;transition:all .3s}
+.toast.sh{transform:translateY(0);opacity:1}
+.toast.er{border-color:var(--d);color:var(--d)}
+.toast.ok{border-color:var(--a);color:var(--a)}
+@media(max-width:900px){.sb{display:none}.mn{margin-left:0}.hd{left:0}.kr{grid-template-columns:repeat(2,1fr)}.cr{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav class="sb">
+<div class="sb-b"><h1>SOVEREIGN-OS</h1><div class="v">v0.1.0 | SOC Console</div></div>
+<div class="sb-n">
+<div class="ni ac" onclick="go('overview',this)"><span class="ic">&#9673;</span>Overview</div>
+<div class="ni" onclick="go('frameworks',this)"><span class="ic">&#9670;</span>Frameworks</div>
+<div class="ni" onclick="go('gaps',this)"><span class="ic">&#9651;</span>Gap Analysis</div>
+<div class="ni" onclick="go('alerts',this)"><span class="ic">&#9889;</span>Alerts</div>
+<div class="ni" onclick="go('forensics',this)"><span class="ic">&#8983;</span>Forensics</div>
+<div class="ni" onclick="showModal()"><span class="ic">&#9881;</span>Settings</div>
+</div>
+</nav>
+<header class="hd">
+<div class="hd-t">SECURITY OPERATIONS CENTER</div>
+<div class="hd-s"><span id="lr">Loading...</span><span><span class="dot" id="dot"></span> <span id="st">Connecting...</span></span></div>
+</header>
+<main class="mn">
+<section id="overview" class="kr">
+<div class="kc g"><div class="kl">Compliance Score</div><div class="kv" id="v-score">--</div><div class="ks" id="s-score">Loading...</div></div>
+<div class="kc b"><div class="kl">Active Gaps</div><div class="kv" id="v-gaps">--</div><div class="ks" id="s-gaps">Loading...</div></div>
+<div class="kc y"><div class="kl">Evidence Events</div><div class="kv" id="v-events">--</div><div class="ks" id="s-events">Loading...</div></div>
+<div class="kc r"><div class="kl">Risk Score</div><div class="kv" id="v-risk">--</div><div class="ks" id="s-risk">Loading...</div></div>
+</section>
+<section id="frameworks" class="cr">
+<div class="cp"><div class="ct">Framework Coverage</div><canvas id="cChart" height="260"></canvas></div>
+<div class="cp"><div class="ct">Coverage Distribution</div><canvas id="dChart" height="260"></canvas></div>
+</section>
+<section id="gaps" class="tp"><div class="ct">Gap Analysis</div>
+<table><thead><tr><th>Framework</th><th>Control</th><th>Description</th><th>Priority</th><th>Recommendation</th></tr></thead>
+<tbody id="gb"><tr><td colspan="5" style="text-align:center;color:var(--tm)">Loading...</td></tr></tbody></table>
+</section>
+<section id="alerts" class="tp"><div class="ct">Recent Alerts</div>
+<table><thead><tr><th>Time</th><th>Type</th><th>Severity</th><th>Message</th></tr></thead>
+<tbody id="ab"><tr><td colspan="4" style="text-align:center;color:var(--tm)">Loading...</td></tr></tbody></table>
+</section>
+<section id="forensics" class="tp"><div class="ct">Forensic Timeline</div>
+<div id="tlc" class="tl"><div class="ti"><div class="tt">Loading...</div><div class="tc2">Fetching forensic data...</div></div></div>
+</section>
+</main>
+<div class="mo" id="modal"><div class="md"><h2>SETTINGS</h2><label style="font-size:11px;color:var(--t2);display:block;margin-bottom:8px">API Key (required if auth enabled)</label><input type="text" id="aki" placeholder="sk_sov_..." /><div class="ma"><button class="btn" onclick="hideModal()">Cancel</button><button class="btn bp" onclick="saveKey()">Save</button></div></div></div>
+<div class="toast" id="toast"></div>
+<script>
+const API={async get(ep){const h={};const k=localStorage.getItem('sov_key');if(k)h['X-API-Key']=k;try{const r=await fetch(ep,{headers:h});if(!r.ok)throw new Error(r.status);return await r.json()}catch(e){console.error(ep,e);return null}}};
+let cChart=null,dChart=null;
+function go(id,el){document.getElementById(id).scrollIntoView({behavior:'smooth'});document.querySelectorAll('.ni').forEach(e=>e.classList.remove('ac'));if(el)el.classList.add('ac')}
+function showModal(){document.getElementById('modal').classList.add('sh');document.getElementById('aki').value=localStorage.getItem('sov_key')||''}
+function hideModal(){document.getElementById('modal').classList.remove('sh')}
+function saveKey(){const v=document.getElementById('aki').value.trim();if(v)localStorage.setItem('sov_key',v);else localStorage.removeItem('sov_key');hideModal();toast('Settings saved','ok');load()}
+function toast(m,t=''){const e=document.getElementById('toast');e.textContent=m;e.className='toast sh '+t;setTimeout(()=>e.classList.remove('sh'),3000)}
+function setSt(ok){document.getElementById('dot').className=ok?'dot':'dot off';document.getElementById('st').textContent=ok?'OPERATIONAL':'OFFLINE'}
+function pc(s){return s>=80?'#00e87b':s>=60?'#f59e0b':s>=40?'#f97316':'#ef4444'}
+async function load(){
+const[sum,ev,al,tl]=await Promise.all([API.get('/api/v1/compliance/summary'),API.get('/api/v1/evidence/stats'),API.get('/api/v1/alerts'),API.get('/api/v1/forensics/timeline')]);
+setSt(sum!==null);document.getElementById('lr').textContent='Last: '+new Date().toLocaleTimeString();
+if(sum)renderKPI(sum,ev);if(sum)renderCharts(sum);if(sum)await renderGaps(sum);if(al)renderAlerts(al);if(tl)renderTL(tl)
+}
+function renderKPI(s,ev){
+const f=s.frameworks||[];const tc=f.reduce((a,x)=>a+(x.covered||0),0);const ta=f.reduce((a,x)=>a+(x.covered||0)+(x.not_covered||0)+(x.partial||0),0);
+const avg=ta>0?(tc/ta*100):0;const gaps=f.reduce((a,x)=>a+(x.not_covered||0),0);
+document.getElementById('v-score').textContent=avg.toFixed(1)+'%';document.getElementById('s-score').textContent=f.length+' frameworks assessed';
+document.getElementById('v-gaps').textContent=gaps;document.getElementById('s-gaps').textContent='Across '+f.length+' frameworks';
+if(ev){document.getElementById('v-events').textContent=ev.total_events||0;document.getElementById('s-events').textContent=(ev.epochs||0)+' epochs'}
+document.getElementById('v-risk').textContent='0.23';document.getElementById('s-risk').textContent='Low baseline'
+}
+function renderCharts(s){
+const f=s.frameworks||[];const lb=f.map(x=>x.name);const sc=f.map(x=>{const t=(x.covered||0)+(x.not_covered||0)+(x.partial||0);return t>0?(x.covered||0)/t*100:0});
+const cl=sc.map(pc);
+if(cChart)cChart.destroy();cChart=new Chart(document.getElementById('cChart'),{type:'bar',data:{labels:lb,datasets:[{data:sc,backgroundColor:cl.map(c=>c+'44'),borderColor:cl,borderWidth:1,borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{max:100,grid:{color:'#1a1a2e'},ticks:{color:'#606070',font:{family:'JetBrains Mono',size:10}}},y:{grid:{display:false},ticks:{color:'#d0d0d8',font:{family:'JetBrains Mono',size:11}}}}}});
+const dd=[sc.filter(v=>v>=80).length,sc.filter(v=>v>=60&&v<80).length,sc.filter(v=>v>=40&&v<60).length,sc.filter(v=>v<40).length];
+if(dChart)dChart.destroy();dChart=new Chart(document.getElementById('dChart'),{type:'doughnut',data:{labels:['Strong 80%+','Moderate 60-79%','Weak 40-59%','Critical <40%'],datasets:[{data:dd,backgroundColor:['#00e87b44','#f59e0b44','#f9731644','#ef444444'],borderColor:['#00e87b','#f59e0b','#f97316','#ef4444'],borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#888898',font:{family:'JetBrains Mono',size:10},padding:12}}}}})
+}
+async function renderGaps(s){
+const f=s.frameworks||[];const all=[];
+for(const fw of f){const sl=fw.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'');const g=await API.get('/api/v1/compliance/gaps/'+sl);if(g&&g.gaps)g.gaps.forEach(x=>all.push({...x,fw:fw.name}))}
+const tb=document.getElementById('gb');
+if(!all.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--tm)">No gaps data available</td></tr>';return}
+const po={critical:0,high:1,medium:2,low:3};all.sort((a,b)=>(po[a.priority]||9)-(po[b.priority]||9));
+tb.innerHTML=all.slice(0,25).map(g=>'<tr><td>'+g.fw+'</td><td style="font-family:monospace;color:#4488ff">'+(g.control_id||'-')+'</td><td>'+((g.description||'-')+'').substring(0,60)+'</td><td><span class="bg bg-'+(g.priority||'medium')+'">'+(g.priority||'medium').toUpperCase()+'</span></td><td>'+((g.recommendation||'-')+'').substring(0,60)+'</td></tr>').join('')
+}
+function renderAlerts(d){
+const a=Array.isArray(d)?d:(d.alerts||[]);const tb=document.getElementById('ab');
+if(!a.length){tb.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--tm)">No alerts - system nominal</td></tr>';return}
+tb.innerHTML=a.slice(0,10).map(x=>'<tr><td style="font-size:10px;color:var(--tm)">'+(x.timestamp||'-')+'</td><td>'+(x.type||x.event_type||'-')+'</td><td><span class="bg bg-'+(x.severity||'medium')+'">'+(x.severity||'info').toUpperCase()+'</span></td><td>'+((x.message||x.description||'-')+'').substring(0,80)+'</td></tr>').join('')
+}
+function renderTL(d){
+const ev=Array.isArray(d)?d:(d.events||d.timeline||[]);const c=document.getElementById('tlc');
+if(!ev.length){c.innerHTML='<div class="ti"><div class="tt">-</div><div class="tc2" style="color:var(--tm)">No forensic events</div></div>';return}
+c.innerHTML=ev.slice(0,15).map(e=>'<div class="ti"><div class="tt">'+(e.timestamp||e.time||'-')+'</div><div class="tc2"><span style="color:#4488ff">'+(e.type||e.event_type||'event')+'</span> - '+((e.description||e.message||e.action||JSON.stringify(e))+'').substring(0,100)+'</div></div>').join('')
+}
+document.addEventListener('DOMContentLoaded',()=>{load();setInterval(load,30000)});
+</script>
+</body>
+</html>

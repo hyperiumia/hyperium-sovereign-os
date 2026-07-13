@@ -14,6 +14,12 @@ from app.api import events, policies, evidence, alerts, workspaces
 from app.compliance.router import router as compliance_router
 from app.compliance.breach_router import router as breach_router
 from app.forensics.router import router as forensics_router
+from app.auth.middleware import APIKeyMiddleware
+from app.auth.router import router as auth_router
+from app.reporting.router import router as reporting_router
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
+import os
 
 logger = structlog.get_logger(__name__)
 START_TIME = time.time()
@@ -67,3 +73,13 @@ async def health_check(db: AsyncSession = Depends(get_db)):
 @app.get("/")
 async def root():
     return {"product": "Hyperium Sovereign-OS", "version": settings.VERSION, "docs": "/docs"}
+
+
+# Static files & dashboard
+_static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
+if os.path.isdir(_static_dir):
+    app.mount("/static", StaticFiles(directory=_static_dir), name="static")
+
+@app.get("/dashboard")
+async def _dashboard():
+    return RedirectResponse(url="/static/dashboard.html")
