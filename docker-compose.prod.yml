@@ -1,0 +1,80 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sovereign-db
+    environment:
+      POSTGRES_DB: sovereign_os
+      POSTGRES_USER: sovereign
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sovereign -d sovereign_os"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  app:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: sovereign-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - SOS_DATABASE_URL=postgresql+asyncpg://sovereign:${POSTGRES_PASSWORD}@postgres:5432/sovereign_os
+      - SOS_AGENT_HMAC_SECRET=${AGENT_HMAC_SECRET:?Set AGENT_HMAC_SECRET in .env}
+      - SOVEREIGN_AUTH_ENABLED=${SOVEREIGN_AUTH_ENABLED:-true}
+      - SOVEREIGN_RATE_LIMIT=${SOVEREIGN_RATE_LIMIT:-120}
+      - SOVEREIGN_LOG_LEVEL=${SOVEREIGN_LOG_LEVEL:-INFO}
+      - SOVEREIGN_LOG_FILE=${SOVEREIGN_LOG_FILE:-/app/logs/sovereign.log}
+    volumes:
+      - app_data:/app/data
+      - app_keys:/app/app/keys
+      - app_logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: sovereign-nginx
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - certbot_etc:/etc/letsencrypt:ro
+      - certbot_var:/var/www/certbot:ro
+      - nginx_logs:/var/log/nginx
+    restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: sovereign-certbot
+    volumes:
+      - certbot_etc:/etc/letsencrypt
+      - certbot_var:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done'"
+    restart: unless-stopped
+
+volumes:
+  pg_data:
+  app_data:
+  app_keys:
+  app_logs:
+  certbot_etc:
+  certbot_var:
+  nginx_logs:

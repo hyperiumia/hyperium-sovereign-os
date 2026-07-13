@@ -35,3 +35,8 @@ Thumbs.db
 # Environment
 .env
 *.env
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+nginx/conf.d/init-only.conf.disabled

@@ -8,7 +8,10 @@ class Settings(BaseSettings):
     APP_NAME: str = "Hyperium Sovereign-OS"
     VERSION: str = "1.0.0"
     DEBUG: bool = False
-    DATABASE_URL: str = "sqlite+aiosqlite:///./sovereign_os.db"
+    DATABASE_URL: str = os.getenv(
+        "SOS_DATABASE_URL",
+        "sqlite+aiosqlite:///./sovereign_os.db"
+    )
     KEYS_DIR: Path = Path("./app/keys")
     EVIDENCE_DIR: Path = Path("./evidence_store")
     AGENT_HMAC_SECRET: str = os.getenv(
@@ -21,8 +24,7 @@ class Settings(BaseSettings):
     RISK_ALERT_THRESHOLD: float = 0.60
     MAX_EVENTS_PER_AGENT_PER_MINUTE: int = 600
 
-    class Config:
-        env_prefix = "SOS_"
+    model_config = ConfigDict(env_prefix="SOS_")
 
 
 settings = Settings()
