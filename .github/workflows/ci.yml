@@ -10,6 +10,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version: ["3.11", "3.12"]
 
@@ -26,16 +27,29 @@ jobs:
           cd server
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip list
+
+      - name: Verify directories
+        run: |
+          cd server
+          mkdir -p app/keys evidence_store config
+          ls -la
 
       - name: Verify imports
         run: |
           cd server
-          python -c "from app.main import app; print('App loaded OK')"
+          python -c "
+          import sys
+          print(f'Python: {sys.version}')
+          from app.main import app
+          print(f'App: {app.title}')
+          print(f'Routes: {len(list(app.routes))}')
+          "
 
       - name: Run tests
         run: |
           cd server
-          python -m pytest tests/ -v --tb=long 2>&1
+          python -m pytest tests/ -v --tb=long -x 2>&1
 
   build:
     needs: test
