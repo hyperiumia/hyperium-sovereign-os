@@ -21,32 +21,21 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('server/requirements.txt') }}
-
       - name: Install dependencies
         run: |
           cd server
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Verify imports
+        run: |
+          cd server
+          python -c "from app.main import app; print('App loaded OK')"
+
       - name: Run tests
         run: |
           cd server
-          python -m pytest tests/ -v --tb=long --cov=app --cov-report=term-missing --cov-report=xml 2>&1
-        env:
-          SOS_DATABASE_URL: "sqlite+aiosqlite:///./test_ci.db"
-          SOS_AGENT_HMAC_SECRET: "ci-test-secret-not-for-production"
-
-      - name: Upload coverage
-        if: matrix.python-version == '3.12' && always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: server/coverage.xml
+          python -m pytest tests/ -v --tb=long 2>&1
 
   build:
     needs: test
@@ -59,7 +48,7 @@ jobs:
       - name: Build Docker image
         run: docker build -t sovereign-os:latest ./server
 
-      - name: Verify container starts
+      - name: Verify container
         run: |
           docker run -d --name test-sov -p 8000:8000 \
             -e SOS_DATABASE_URL=sqlite+aiosqlite:///./test.db \
