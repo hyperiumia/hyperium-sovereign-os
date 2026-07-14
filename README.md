@@ -9,8 +9,9 @@
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.0.0-00e87b?style=flat-square&labelColor=0d0d0d" alt="Version">
   <img src="https://img.shields.io/badge/python-3.11%20|%203.12-4488ff?style=flat-square&labelColor=0d0d0d" alt="Python">
-  <img src="https://img.shields.io/badge/tests-128%20passed-00e87b?style=flat-square&labelColor=0d0d0d" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-140%20passed-00e87b?style=flat-square&labelColor=0d0d0d" alt="Tests">
   <img src="https://img.shields.io/badge/coverage-74%25-f59e0b?style=flat-square&labelColor=0d0d0d" alt="Coverage">
+  <img src="https://img.shields.io/badge/CI-passing-00e87b?style=flat-square&labelColor=0d0d0d" alt="CI">
   <img src="https://img.shields.io/badge/license-Proprietary-ef4444?style=flat-square&labelColor=0d0d0d" alt="License">
   <img src="https://img.shields.io/badge/compliance-7%20frameworks-4488ff?style=flat-square&labelColor=0d0d0d" alt="Compliance">
 </p>
@@ -45,7 +46,7 @@ Built for organizations that cannot afford to trust their network perimeter, Sov
 
 ## Architecture
 
-                    +-------------------------------------+
+                 +-------------------------------------+
                     |         REST API (FastAPI)           |
                     |   30+ endpoints | Auth | Rate        |
                     |   Limiting | Metrics | Dashboard     |
@@ -510,10 +511,10 @@ test_compliance.py	20	7 frameworks, engine evaluation, gaps, evidence, export
 test_auth.py	11	API keys, middleware, Bearer tokens, exempt paths
 test_reports.py	10	Executive report, framework reports, HTML generation
 test_forensics.py	10	Watermark, timeline, taint, SIEM, packaging
-test_breach.py	5	Breach evaluation, notification engine, RFC 3161
+test_breach.py	6	Breach evaluation, notification engine, RFC 3161
 test_rate_limiter.py	4	Disabled mode, enabled mode, 429 responses, exempt paths
 test_metrics.py	7	Platform info, version, uptime, config, vault, policies
-Total	128	74% code coverage
+Total	140	74% code coverage
 
 
 Technology Stack
