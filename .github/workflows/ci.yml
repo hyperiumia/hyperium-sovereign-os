@@ -33,10 +33,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run tests with coverage
+      - name: Run tests
         run: |
           cd server
-          python -m pytest tests/ -v --cov=app --cov-report=term-missing --cov-report=xml
+          python -m pytest tests/ -v --tb=long --cov=app --cov-report=term-missing --cov-report=xml 2>&1
+        env:
+          SOS_DATABASE_URL: "sqlite+aiosqlite:///./test_ci.db"
+          SOS_AGENT_HMAC_SECRET: "ci-test-secret-not-for-production"
 
       - name: Upload coverage
         if: matrix.python-version == '3.12' && always()
