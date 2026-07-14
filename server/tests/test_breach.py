@@ -13,7 +13,6 @@ class TestBreachEvaluate:
         assert len(r.json()) > 0
 
 
-@pytest.mark.asyncio
 class TestBreachNotification:
     def test_engine_import(self):
         from app.compliance.breach_notification import BreachNotificationEngine
@@ -26,7 +25,6 @@ class TestBreachNotification:
         assert callable(getattr(engine, "evaluate_breach", None))
 
 
-@pytest.mark.asyncio
 class TestRFC3161:
     def test_import(self):
         from app.compliance.rfc3161 import TimestampAuthority
