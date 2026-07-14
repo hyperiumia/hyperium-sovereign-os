@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hyperium Sovereign-OS — Incident Investigation Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0a0a;--surface:#141416;--surface2:#1c1c1f;--border:#2a2a2f;
+  --red:#ff2d55;--red-bg:#ff2d5518;--red-glow:#ff2d5530;
+  --amber:#ff9f0a;--amber-bg:#ff9f0a18;
+  --green:#30d158;--green-bg:#30d15818;
+  --blue:#0a84ff;--blue-bg:#0a84ff18;
+  --cyan:#64d2ff;--cyan-bg:#64d2ff18;
+  --text:#f5f5f7;--text2:#a1a1a6;--text3:#636366;
+  --mono:'JetBrains Mono',monospace;--display:'Space Grotesk',sans-serif;--sans:'Inter',system-ui,sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;line-height:1.6}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 30% 20%,#ff2d5506 0%,transparent 60%);pointer-events:none;z-index:0}
+
+/* HEADER */
+.incident-header{padding:48px 60px;border-bottom:1px solid var(--border);position:relative;z-index:1}
+.header-row{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:32px}
+.header-brand{font-family:var(--display);font-size:13px;font-weight:500;letter-spacing:3px;text-transform:uppercase;color:var(--text3)}
+.header-brand span{color:var(--red)}
+.classification{display:flex;align-items:center;gap:10px}
+.class-badge{font-family:var(--mono);font-size:11px;font-weight:500;padding:4px 14px;border-radius:4px;letter-spacing:1px}
+.class-badge.critical{background:var(--red-bg);color:var(--red);border:1px solid var(--red-glow)}
+.class-badge.restricted{background:var(--amber-bg);color:var(--amber);border:1px solid rgba(255,159,10,0.2)}
+.header-title{font-family:var(--display);font-size:42px;font-weight:700;line-height:1.1;margin-bottom:8px;letter-spacing:-0.5px}
+.header-subtitle{font-size:16px;color:var(--text2);font-weight:300;margin-bottom:24px}
+.meta-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+.meta-item{border-left:2px solid var(--border);padding-left:16px}
+.meta-label{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--text3);margin-bottom:4px}
+.meta-value{font-family:var(--mono);font-size:13px;color:var(--text)}
+.meta-value.critical{color:var(--red)}
+
+/* CONTENT */
+.content{max-width:1100px;margin:0 auto;padding:40px 60px;position:relative;z-index:1}
+.section{margin-bottom:48px}
+.sec-label{font-family:var(--mono);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text3);margin-bottom:10px}
+.sec-heading{font-family:var(--display);font-size:28px;font-weight:600;margin-bottom:20px;letter-spacing:-0.3px}
+
+/* EXEC SUMMARY */
+.exec-box{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--red);border-radius:6px;padding:28px;margin-bottom:32px}
+.exec-box p{font-size:14px;color:var(--text2);line-height:1.8}
+.exec-box strong{color:var(--text)}
+.exec-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:20px}
+.exec-stat{background:var(--surface2);border-radius:6px;padding:16px;text-align:center}
+.exec-stat-val{font-family:var(--mono);font-size:24px;font-weight:700}
+.exec-stat-val.red{color:var(--red)}.exec-stat-val.amber{color:var(--amber)}.exec-stat-val.green{color:var(--green)}.exec-stat-val.blue{color:var(--blue)}
+.exec-stat-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+
+/* ATTACK TIMELINE */
+.attack-timeline{position:relative;padding-left:40px}
+.attack-timeline::before{content:'';position:absolute;left:16px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--green),var(--amber),var(--red),var(--red),var(--text3))}
+.at-step{position:relative;margin-bottom:28px}
+.at-step::before{content:'';position:absolute;left:-28px;top:6px;width:14px;height:14px;border-radius:50%;border:3px solid;align-self:flex-start}
+.at-step.recon::before{border-color:var(--green);background:var(--green-bg)}
+.at-step.weapon::before{border-color:var(--amber);background:var(--amber-bg)}
+.at-step.delivery::before{border-color:var(--red);background:var(--red-bg)}
+.at-step.action::before{border-color:var(--red);background:var(--red-bg);box-shadow:0 0 12px var(--red-glow)}
+.at-step.response::before{border-color:var(--blue);background:var(--blue-bg)}
+.at-time{font-family:var(--mono);font-size:11px;color:var(--text3);margin-bottom:4px}
+.at-title{font-family:var(--display);font-size:15px;font-weight:600;margin-bottom:4px}
+.at-desc{font-size:12px;color:var(--text2);margin-bottom:8px}
+.at-evidence{font-family:var(--mono);font-size:10px;color:var(--text3);background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:8px 12px;display:inline-block}
+.at-badge{display:inline-block;font-family:var(--mono);font-size:9px;font-weight:600;padding:2px 8px;border-radius:3px;text-transform:uppercase;letter-spacing:1px;margin-left:8px}
+.at-badge.recon{background:var(--green-bg);color:var(--green)}
+.at-badge.weapon{background:var(--amber-bg);color:var(--amber)}
+.at-badge.delivery{background:var(--red-bg);color:var(--red)}
+.at-badge.action{background:var(--red-bg);color:var(--red)}
+.at-badge.response{background:var(--blue-bg);color:var(--blue)}
+
+/* TAINT ANALYSIS */
+.taint-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.taint-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:20px}
+.taint-card-title{font-family:var(--display);font-size:13px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.taint-card-title .dot{width:8px;height:8px;border-radius:50%}
+.taint-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.taint-row:last-child{border:none}
+.taint-from{font-family:var(--mono);font-size:11px;color:var(--cyan);width:100px;flex-shrink:0}
+.taint-arrow{color:var(--text3);font-size:16px}
+.taint-to{font-family:var(--mono);font-size:11px;color:var(--red);width:100px;flex-shrink:0}
+.taint-detail{font-size:11px;color:var(--text2);flex:1}
+.taint-size{font-family:var(--mono);font-size:10px;color:var(--text3)}
+
+/* EVIDENCE TABLE */
+.ev-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.ev-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:20px}
+.ev-card-icon{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:12px}
+.ev-card-icon.hash{background:var(--green-bg);color:var(--green);border:1px solid rgba(48,209,88,0.15)}
+.ev-card-icon.hmac{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(10,132,255,0.15)}
+.ev-card-icon.merkle{background:var(--amber-bg);color:var(--amber);border:1px solid rgba(255,159,10,0.15)}
+.ev-card-icon.epoch{background:var(--cyan-bg);color:var(--cyan);border:1px solid rgba(100,210,255,0.15)}
+.ev-card-icon.rfc{background:var(--red-bg);color:var(--red);border:1px solid rgba(255,45,85,0.15)}
+.ev-card-icon.pkg{background:rgba(175,82,222,0.12);color:#af52de;border:1px solid rgba(175,82,222,0.15)}
+.ev-card-title{font-family:var(--display);font-size:13px;font-weight:600;margin-bottom:4px}
+.ev-card-desc{font-size:11px;color:var(--text2);margin-bottom:10px}
+.ev-card-hash{font-family:var(--mono);font-size:9px;color:var(--text3);word-break:break-all;background:var(--surface2);padding:8px;border-radius:4px}
+.ev-card-status{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;margin-top:10px}
+.ev-card-status.verified{color:var(--green)}
+
+/* BREACH NOTIFICATION */
+.notif-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:24px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.notif-left h3{font-family:var(--display);font-size:16px;font-weight:600;margin-bottom:12px}
+.notif-row{display:flex;gap:10px;padding:6px 0;font-size:12px}
+.notif-key{font-family:var(--mono);font-size:10px;color:var(--text3);width:120px;flex-shrink:0;text-transform:uppercase;letter-spacing:1px}
+.notif-val{color:var(--text2)}
+.notif-val .highlight{color:var(--red);font-weight:600}
+.notif-right{background:var(--surface2);border-radius:6px;padding:20px;font-family:var(--mono);font-size:11px;color:var(--text2);line-height:2}
+.notif-right .status-line{display:flex;align-items:center;gap:8px}
+.notif-right .check{color:var(--green)}
+
+/* FOOTER */
+.footer{text-align:center;padding:32px;font-size:11px;color:var(--text3);border-top:1px solid var(--border);margin-top:20px;position:relative;z-index:1}
+.footer a{color:var(--red);text-decoration:none}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.exec-box,.taint-card,.ev-card,.notif-card{opacity:0;animation:fadeUp 0.6s ease forwards}
+.exec-box{animation-delay:0.1s}.taint-card:nth-child(1){animation-delay:0.2s}.taint-card:nth-child(2){animation-delay:0.25s}
+.ev-card:nth-child(1){animation-delay:0.3s}.ev-card:nth-child(2){animation-delay:0.35s}.ev-card:nth-child(3){animation-delay:0.4s}
+.ev-card:nth-child(4){animation-delay:0.45s}.ev-card:nth-child(5){animation-delay:0.5s}.ev-card:nth-child(6){animation-delay:0.55s}
+.notif-card{animation-delay:0.6s}
+
+@media(max-width:768px){.content{padding:24px}.incident-header{padding:24px}.meta-grid,.exec-stats,.taint-grid,.ev-grid{grid-template-columns:1fr}.notif-card{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="incident-header">
+  <div class="header-row">
+    <div class="header-brand">Hyperium <span>Sovereign-OS</span></div>
+    <div class="classification">
+      <span class="class-badge critical">CRITICAL INCIDENT</span>
+      <span class="class-badge restricted">RESTRICTED DISTRIBUTION</span>
+    </div>
+  </div>
+  <div class="header-title">Incident Investigation Report</div>
+  <div class="header-subtitle">USB Data Exfiltration &mdash; Financial Department Workstation WS-FIN-042</div>
+  <div class="meta-grid">
+    <div class="meta-item">
+      <div class="meta-label">Case ID</div>
+      <div class="meta-value">FC-2026-003</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Severity</div>
+      <div class="meta-value critical">CRITICAL</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Detection Time</div>
+      <div class="meta-value">14 Jul 2026, 09:12 UTC</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Response Time</div>
+      <div class="meta-value">5 min 07 sec</div>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- EXECUTIVE SUMMARY -->
+  <div class="section">
+    <div class="sec-label">01 &mdash; Executive Summary</div>
+    <div class="sec-heading">What Happened</div>
+    <div class="exec-box">
+      <p>On <strong>14 July 2026 at 09:12 UTC</strong>, the Sovereign-OS platform detected insertion of an unauthorized USB mass storage device (SanDisk Ultra 64GB, serial: <strong>4C530001260818116245</strong>) into financial workstation <strong>WS-FIN-042</strong>, assigned to user <strong>jsmith</strong> (Finance Department). Within <strong>5 minutes and 7 seconds</strong>, the platform detected, analyzed, and automatically contained the incident by freezing the user session when the risk score reached <strong>0.91</strong>, exceeding the configured freeze threshold of 0.85.</p>
+      <p style="margin-top:12px">Forensic analysis confirms that <strong>2.3 GB of sensitive financial data</strong> (1,203 files: .xlsx, .pdf) was copied to the removable media before session termination. A network connection attempt to an external IP was <strong>successfully blocked</strong> by the policy engine. All evidence is <strong>cryptographically signed and verifiable</strong>.</p>
+      <div class="exec-stats">
+        <div class="exec-stat"><div class="exec-stat-val red">2.3 GB</div><div class="exec-stat-label">Data Exfiltrated</div></div>
+        <div class="exec-stat"><div class="exec-stat-val amber">5m 07s</div><div class="exec-stat-label">Detection to Freeze</div></div>
+        <div class="exec-stat"><div class="exec-stat-val green">12,847</div><div class="exec-stat-label">Events Captured</div></div>
+        <div class="exec-stat"><div class="exec-stat-val blue">100%</div><div class="exec-stat-label">Evidence Integrity</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ATTACK TIMELINE -->
+  <div class="section">
+    <div class="sec-label">02 &mdash; Attack Timeline</div>
+    <div class="sec-heading">MITRE ATT&CK Phase Reconstruction</div>
+    <div class="attack-timeline">
+
+      <div class="at-step recon">
+        <div class="at-time">09:08:22 &mdash; RECONNAISSANCE</div>
+        <div class="at-title">User Login from Corporate Workstation</div>
+        <div class="at-desc">User jsmith authenticated via Active Directory on WS-FIN-042. Normal login pattern, no anomaly flagged at this stage.</div>
+        <div class="at-evidence">event_id: evt_0a1b2c &bull; session_id: sess_f4a2 &bull; risk_score: 0.12</div>
+        <span class="at-badge recon">T1078</span>
+      </div>
+
+      <div class="at-step weapon">
+        <div class="at-time">09:12:03 &mdash; WEAPONIZATION</div>
+        <div class="at-title">USB Mass Storage Device Inserted</div>
+        <div class="at-desc">SanDisk Ultra 64GB (serial: 4C530001260818116245) connected to USB port. Policy POL-USB-HIGH-RISK triggered immediately. Event flagged as CRITICAL.</div>
+        <div class="at-evidence">event_id: evt_3f8a9c &bull; policy: POL-USB-HIGH-RISK &bull; hmac: a3f8c2e1d91e... &bull; hash: 7b2d4f...</div>
+        <span class="at-badge weapon">T1091</span>
+      </div>
+
+      <div class="at-step delivery">
+        <div class="at-time">09:14:22 &mdash; DELIVERY</div>
+        <div class="at-title">Bulk File Access on Financial Data</div>
+        <div class="at-desc">2,847 files accessed in /finance/Q4-reports/ within 45 seconds. Pattern indicates automated enumeration, not manual browsing. Risk score increased to 0.58.</div>
+        <div class="at-evidence">event_id: evt_8d2e4f &bull; files: 2,847 &bull; path: /finance/Q4-reports/ &bull; risk: 0.58</div>
+        <span class="at-badge delivery">T1005</span>
+      </div>
+
+      <div class="at-step action">
+        <div class="at-time">09:15:01 &mdash; EXFILTRATION</div>
+        <div class="at-title">Data Copied to Removable Media</div>
+        <div class="at-desc">2.3 GB (1,203 files: .xlsx, .pdf) written to /media/usb0/. Taint analysis confirms data flow from classified finance repository to external device. Risk score: 0.78.</div>
+        <div class="at-evidence">event_id: evt_f1a3b5 &bull; size: 2.3GB &bull; files: 1,203 &bull; dest: /media/usb0/ &bull; risk: 0.78</div>
+        <span class="at-badge action">T1052.001</span>
+      </div>
+
+      <div class="at-step action">
+        <div class="at-time">09:16:33 &mdash; C2 ATTEMPT</div>
+        <div class="at-title">Network Connection Blocked</div>
+        <div class="at-desc">DNS query to suspicious external IP (185.x.x.x) intercepted and blocked by policy engine. Potential C2 callback or secondary exfiltration channel. Risk score: 0.91.</div>
+        <div class="at-evidence">event_id: evt_c7d8e9 &bull; dest: 185.x.x.x:443 &bull; action: BLOCKED &bull; risk: 0.91</div>
+        <span class="at-badge action">T1071</span>
+      </div>
+
+      <div class="at-step response">
+        <div class="at-time">09:17:10 &mdash; CONTAINMENT</div>
+        <div class="at-title">Session Frozen &mdash; Account Locked</div>
+        <div class="at-desc">Risk score 0.91 exceeded freeze threshold (0.85). User session terminated. Account jsmith locked pending investigation. USB device access revoked at OS level.</div>
+        <div class="at-evidence">event_id: evt_a1b2c3 &bull; action: SESSION_FREEZE &bull; risk: 0.91 &bull; threshold: 0.85</div>
+        <span class="at-badge response">CONTAINMENT</span>
+      </div>
+
+      <div class="at-step response">
+        <div class="at-time">09:17:11 &mdash; NOTIFICATION</div>
+        <div class="at-title">Breach Notification Initiated</div>
+        <div class="at-desc">RFC 3161 trusted timestamp anchored. 72-hour regulatory SLA clock started. Breach notification templates generated for DPA, internal stakeholders, and affected data subjects.</div>
+        <div class="at-evidence">event_id: evt_d4e5f6 &bull; rfc3161: TSA-Token-2026-0714-0917 &bull; sla_deadline: 17 Jul 2026 09:17 UTC</div>
+        <span class="at-badge response">RFC 3161</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TAINT ANALYSIS -->
+  <div class="section">
+    <div class="sec-label">03 &mdash; Taint Analysis</div>
+    <div class="sec-heading">Data Flow Reconstruction</div>
+    <div class="taint-grid">
+      <div class="taint-card">
+        <div class="taint-card-title"><span class="dot" style="background:var(--red)"></span> Exfiltration Paths Detected</div>
+        <div class="taint-row">
+          <div class="taint-from">/finance/Q4-reports/</div>
+          <div class="taint-arrow">&#8594;</div>
+          <div class="taint-to">/media/usb0/</div>
+          <div class="taint-detail">Q4 financial reports</div>
+          <div class="taint-size">1.8 GB</div>
+        </div>
+        <div class="taint-row">
+          <div class="taint-from">/finance/contracts/</div>
+          <div class="taint-arrow">&#8594;</div>
+          <div class="taint-to">/media/usb0/</div>
+          <div class="taint-detail">Client contracts (PDF)</div>
+          <div class="taint-size">0.5 GB</div>
+        </div>
+        <div class="taint-row">
+          <div class="taint-from">/finance/pending/</div>
+          <div class="taint-arrow">&#8594;</div>
+          <div class="taint-to">BLOCKED</div>
+          <div class="taint-detail">Network C2 channel</div>
+          <div class="taint-size" style="color:var(--green)">0 B</div>
+        </div>
+      </div>
+
+      <div class="taint-card">
+        <div class="taint-card-title"><span class="dot" style="background:var(--cyan)"></span> Risk Zones Affected</div>
+        <div class="taint-row">
+          <div class="taint-from" style="color:var(--red)">FINANCE</div>
+          <div class="taint-arrow">&#8594;</div>
+          <div class="taint-to" style="color:var(--amber)">HIGH</div>
+          <div class="taint-detail">Core financial data accessed</div>
+          <div class="taint-size">1,203 files</div>
+        </div>
+        <div class="taint-row">
+          <div class="taint-from" style="color:var(--amber)">HR</div>
+          <div class="taint-arrow">&#8594;</div>
+          <div class="taint-to" style="color:var(--green)">LOW</div>
+          <div class="taint-detail">Adjacent directory browsed</div>
+          <div class="taint-size">0 files</div>
+        </div>
+        <div class="taint-row">
+          <div class="taint-from" style="color:var(--green)">IT</div>
+          <div class="taint-arrow">&#8594;</div>
+          <div class="taint-to" style="color:var(--green)">NONE</div>
+          <div class="taint-detail">No access detected</div>
+          <div class="taint-size">0 files</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CRYPTOGRAPHIC EVIDENCE -->
+  <div class="section">
+    <div class="sec-label">04 &mdash; Cryptographic Evidence Package</div>
+    <div class="sec-heading">Chain of Custody &mdash; Mathematically Verifiable</div>
+    <div class="ev-grid">
+      <div class="ev-card">
+        <div class="ev-card-icon hash">&#9638;</div>
+        <div class="ev-card-title">SHA-256 Event Hashes</div>
+        <div class="ev-card-desc">Every event independently hashed. Content is key-order independent and deterministic.</div>
+        <div class="ev-card-hash">a3f8c2e1d91e4b7f8c2a9d31e5f7a0b3c6d8e1f4a7b0c3d6e9f2a5b8c1d4e7</div>
+        <div class="ev-card-status verified">&#10003; 12,847 / 12,847 events verified</div>
+      </div>
+      <div class="ev-card">
+        <div class="ev-card-icon hmac">&#9733;</div>
+        <div class="ev-card-title">HMAC-SHA256 Signatures</div>
+        <div class="ev-card-desc">Tamper detection via shared secret. Any modification breaks the signature chain.</div>
+        <div class="ev-card-hash">b7d2f1a9c3e5d02f8a1b4c7d0e3f6a9b2c5d8e1f4a7b0c3d6e9f2a5b8c1d4e7</div>
+        <div class="ev-card-status verified">&#10003; All signatures valid &mdash; no tampering detected</div>
+      </div>
+      <div class="ev-card">
+        <div class="ev-card-icon merkle">&#9650;</div>
+        <div class="ev-card-title">Merkle Tree Proof</div>
+        <div class="ev-card-desc">Append-only proof structure. 256 leaves per epoch with root hash anchoring.</div>
+        <div class="ev-card-hash">e4b1f7a28c2a9d31e5f7a0b3c6d8e1f4a7b0c3d6e9f2a5b8c1d4e7f0a3b6c9</div>
+        <div class="ev-card-status verified">&#10003; Epoch #47 root verified against 256 leaves</div>
+      </div>
+      <div class="ev-card">
+        <div class="ev-card-icon epoch">&#9998;</div>
+        <div class="ev-card-title">Ed25519 Epoch Signing</div>
+        <div class="ev-card-desc">Asymmetric non-repudiation. Epoch signed with platform private key.</div>
+        <div class="ev-card-hash">key_id: 1fc0e6ec1f1da6ae &bull; epoch #47 signature: 3a8f2c1d...</div>
+        <div class="ev-card-status verified">&#10003; Signature verified against public key</div>
+      </div>
+      <div class="ev-card">
+        <div class="ev-card-icon rfc">&#9200;</div>
+        <div class="ev-card-title">RFC 3161 Trusted Timestamp</div>
+        <div class="ev-card-desc">Legal-grade temporal proof from trusted timestamp authority.</div>
+        <div class="ev-card-hash">TSA-Token: 2026-0714-091711-UTC &bull; serial: TSA-2026-00847</div>
+        <div class="ev-card-status verified">&#10003; Timestamp verified &mdash; legal admissibility confirmed</div>
+      </div>
+      <div class="ev-card">
+        <div class="ev-card-icon pkg">&#128230;</div>
+        <div class="ev-card-title">Forensic Package Export</div>
+        <div class="ev-card-desc">Complete evidence package with chain-of-custody in JSON and ZIP format.</div>
+        <div class="ev-card-hash">package_id: pkg-FC-2026-003 &bull; hash: 9f4c2a8b1e7d3f5a...</div>
+        <div class="ev-card-status verified">&#10003; Package integrity verified</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BREACH NOTIFICATION -->
+  <div class="section">
+    <div class="sec-label">05 &mdash; Breach Notification Status</div>
+    <div class="sec-heading">Regulatory Compliance Tracking</div>
+    <div class="notif-card">
+      <div class="notif-left">
+        <h3>Notification Details</h3>
+        <div class="notif-row"><div class="notif-key">Incident Type</div><div class="notif-val">Unauthorized Data Exfiltration</div></div>
+        <div class="notif-row"><div class="notif-key">Data Subjects</div><div class="notif-val">~340 clients (financial records)</div></div>
+        <div class="notif-row"><div class="notif-key">Data Categories</div><div class="notif-val">Financial reports, contracts, PII</div></div>
+        <div class="notif-row"><div class="notif-key">SLA Deadline</div><div class="notif-val"><span class="highlight">17 Jul 2026, 09:17 UTC (72h)</span></div></div>
+        <div class="notif-row"><div class="notif-key">DPA Contact</div><div class="notif-val">Autoridad Nacional de Datos (Chile)</div></div>
+        <div class="notif-row"><div class="notif-key">Affected Frameworks</div><div class="notif-val">GDPR Art.33/34, HIPAA 164.408, NIST IR-6</div></div>
+      </div>
+      <div class="notif-right">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:12px;text-transform:uppercase;letter-spacing:1px">Notification Pipeline</div>
+        <div class="status-line"><span class="check">&#10003;</span> Incident detected and classified</div>
+        <div class="status-line"><span class="check">&#10003;</span> Evidence package generated</div>
+        <div class="status-line"><span class="check">&#10003;</span> RFC 3161 timestamp anchored</div>
+        <div class="status-line"><span class="check">&#10003;</span> DPA notification template generated</div>
+        <div class="status-line"><span class="check">&#10003;</span> Data subject notification drafted</div>
+        <div class="status-line" style="color:var(--amber)"><span>&#9675;</span> Legal review pending</div>
+        <div class="status-line" style="color:var(--text3)"><span>&#9675;</span> DPA submission scheduled</div>
+        <div style="margin-top:16px;padding:10px;background:var(--green-bg);border:1px solid rgba(48,209,88,0.15);border-radius:4px;font-size:10px;color:var(--green)">
+          &#10003; 72h SLA compliance: ON TRACK &mdash; 47h remaining
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECOMMENDATIONS -->
+  <div class="section">
+    <div class="sec-label">06 &mdash; Recommendations</div>
+    <div class="sec-heading">Immediate & Strategic Actions</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--red);border-radius:6px;padding:20px">
+        <div style="font-family:var(--display);font-size:14px;font-weight:600;margin-bottom:12px;color:var(--red)">Immediate (24-48h)</div>
+        <ul style="list-style:none;font-size:12px;color:var(--text2);line-height:2.2">
+          <li>&#9656; Complete forensic imaging of WS-FIN-042</li>
+          <li>&#9656; Revoke and replace all finance department credentials</li>
+          <li>&#9656; Identify recipient of USB device</li>
+          <li>&#9656; File DPA notification within 72h SLA</li>
+          <li>&#9656; Brief executive leadership and legal counsel</li>
+        </ul>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--amber);border-radius:6px;padding:20px">
+        <div style="font-family:var(--display);font-size:14px;font-weight:600;margin-bottom:12px;color:var(--amber)">Strategic (1-4 weeks)</div>
+        <ul style="list-style:none;font-size:12px;color:var(--text2);line-height:2.2">
+          <li>&#9656; Deploy endpoint DLP agent on all workstations</li>
+          <li>&#9656; Implement USB device whitelist policy</li>
+          <li>&#9656; Enforce MFA for all financial system access</li>
+          <li>&#9656; Review and tighten data classification policies</li>
+          <li>&#9656; Conduct department-wide security awareness training</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIGNATURE BLOCK -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:32px;display:grid;grid-template-columns:repeat(3,1fr);gap:32px">
+    <div style="text-align:center">
+      <div style="font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--text3);margin-bottom:8px">Report Generated By</div>
+      <div style="font-family:var(--mono);font-size:12px;color:var(--text)">Hyperium Sovereign-OS v1.0.0</div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--text3);margin-bottom:8px">Report Hash</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text);word-break:break-all">SHA-256: 9f4c2a8b1e7d3f5a6b8c0d2e4f6a8b0c1d3e5f7a9b1c3d5e7f9a1b3c5d7e9f</div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--text3);margin-bottom:8px">Signing Key</div>
+      <div style="font-family:var(--mono);font-size:12px;color:var(--text)">Ed25519: 1fc0e6ec1f1da6ae</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Hyperium Sovereign-OS &bull; CONFIDENTIAL &mdash; RESTRICTED DISTRIBUTION &bull; Copyright &copy; 2026 Hyperium IA &bull; <a href="https://www.hyperiumia.com">www.hyperiumia.com</a>
+  </div>
+</div>
+
+</body>
+</html>
