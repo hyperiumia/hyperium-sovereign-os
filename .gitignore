@@ -40,3 +40,6 @@ Thumbs.db
 .coverage
 htmlcov/
 nginx/conf.d/init-only.conf.disabled
+*.db-journal
+*.db-wal
+*.db-shm
