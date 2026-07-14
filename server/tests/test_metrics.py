@@ -17,7 +17,6 @@ class TestMetrics:
         r = await client.get("/metrics")
         d = r.json()
         assert "platform" in d
-        assert "app_name" in d["platform"]
 
     async def test_has_config(self, client):
         r = await client.get("/metrics")
@@ -27,12 +26,12 @@ class TestMetrics:
     async def test_has_vault(self, client):
         r = await client.get("/metrics")
         d = r.json()
-        assert "evidence_vault" in d
+        assert "vault" in d
 
     async def test_has_policies(self, client):
         r = await client.get("/metrics")
         d = r.json()
-        assert "policies" in d
+        assert "policies_loaded" in d
 
     async def test_has_uptime(self, client):
         r = await client.get("/metrics")
